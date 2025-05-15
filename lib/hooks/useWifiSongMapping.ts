@@ -69,10 +69,7 @@ export function useWifiSongMapping() {
       let bssid = null;
 
       if (!ssid || ssid === "") {
-        console.log("No WiFi SSID detected, treating as disconnected");
-
         if (previousWifiRef.current.ssid) {
-          console.log("Disconnected from previous network, stopping playback");
           await stopSound();
         }
 
@@ -88,7 +85,7 @@ export function useWifiSongMapping() {
         );
         bssid = currentNetwork?.BSSID || null;
       } catch (error) {
-        console.log("Could not get BSSID:", error);
+        console.error("Error loading WiFi list:", error);
       }
 
       const wifiChanged =
@@ -106,8 +103,7 @@ export function useWifiSongMapping() {
 
       return { ssid, bssid };
     } catch (error) {
-      console.log("Error getting WiFi info:", error);
-
+      console.error("Error getting current WiFi:", error);
       await stopSound();
       previousWifiRef.current = { ssid: null, bssid: null };
       setCurrentWifi({ ssid: "", bssid: null });
@@ -180,7 +176,6 @@ export function useWifiSongMapping() {
           currentlyPlayingRef.current.isPlaying &&
           now - currentlyPlayingRef.current.lastPlayedAt < 5 * 60 * 1000
         ) {
-          console.log("Same song already playing, skipping restart");
           return;
         }
 
@@ -224,7 +219,6 @@ export function useWifiSongMapping() {
     const { bssid, ssid } = wifiInfo;
 
     if (!bssid && !ssid) {
-      console.log("No WiFi connection, stopping playback");
       if (sound) {
         await sound.stopAsync();
         await sound.unloadAsync();
@@ -280,8 +274,6 @@ export function useWifiSongMapping() {
             currentlyPlayingRef.current.isPlaying = false;
           }
         });
-
-        console.log("Started playback for new WiFi immediately");
       } else {
         if (sound) {
           await sound.stopAsync();
@@ -299,7 +291,6 @@ export function useWifiSongMapping() {
     const { bssid, ssid } = await getCurrentWifi();
 
     if (!bssid && !ssid) {
-      console.log("WiFi disconnected, stopping playback");
       await stopSound();
       return;
     }
