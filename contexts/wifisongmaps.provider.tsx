@@ -72,9 +72,7 @@ export const WiFiSongMappingProvider: React.FC<{
 
   const loadMappings = useCallback(async () => {
     try {
-      console.log("Loading mappings...");
       const mappingsArray = await loadMappingsUtil();
-      console.log(`Loaded ${mappingsArray.length} mappings`);
       setMappings(mappingsArray);
       return mappingsArray;
     } catch (error) {
@@ -149,8 +147,6 @@ export const WiFiSongMappingProvider: React.FC<{
 
   const deleteMapping = useCallback(
     async (bssid: string) => {
-      console.log(`Deleting mapping for BSSID: ${bssid}`);
-
       if (currentWifi.bssid === bssid) {
         await stopSound();
       }
@@ -158,7 +154,6 @@ export const WiFiSongMappingProvider: React.FC<{
       const result = await deleteMappingUtil(bssid);
 
       if (result) {
-        console.log("Delete successful, refreshing mappings");
         refreshMappings();
       }
 

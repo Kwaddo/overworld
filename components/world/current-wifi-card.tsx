@@ -56,24 +56,10 @@ const CurrentWifiCard: FC<CurrentWifiCardProps> = ({ ssid, bssid }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#181825",
-    padding: 16,
-    paddingTop: 48,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#cdd6f4",
-    marginTop: 24,
-    marginBottom: 16,
-  },
   currentWifiCard: {
     backgroundColor: "#313244",
     borderRadius: 10,
     padding: 16,
-    marginBottom: 16,
   },
   label: {
     fontSize: 16,
