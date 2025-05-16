@@ -201,23 +201,28 @@ export const WiFiSongMappingProvider: React.FC<{
     }
   }, []);
 
-  const playSongForCurrentWifi = useCallback(async () => {
-    const { bssid, ssid } = await getCurrentWifi();
+  const playSongForCurrentWifi = useCallback(
+    async (forcePlay = false) => {
+      const { bssid, ssid } = await getCurrentWifi();
 
-    if (!bssid || !ssid) {
-      await stopSound();
-      return;
-    }
+      if (!bssid || !ssid) {
+        await stopSound();
+        return;
+      }
 
-    const allMappings = await loadMappings();
-    const mapping = allMappings.find((m) => m.bssid === bssid);
+      const allMappings = await loadMappings();
+      const mapping = allMappings.find((m) => m.bssid === bssid);
 
-    if (mapping) {
-      await playSound(mapping.songUri, mapping.bssid);
-    } else {
-      await stopSound();
-    }
-  }, [getCurrentWifi, loadMappings]);
+      if (mapping) {
+        await playSound(mapping.songUri, mapping.bssid, {
+          forceReplay: forcePlay,
+        });
+      } else {
+        await stopSound();
+      }
+    },
+    [getCurrentWifi, loadMappings]
+  );
 
   const contextValue: WiFiSongMappingContextType = {
     mappings,

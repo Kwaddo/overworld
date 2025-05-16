@@ -39,18 +39,13 @@ export const playSound = async (
   } = {}
 ): Promise<void | Audio.Sound | null> => {
   try {
-    const {
-      forceReplay = false,
-      looping = false,
-      cooldownMinutes = 5,
-    } = options;
+    const { forceReplay = false, looping = false } = options;
     const now = Date.now();
 
     if (
       !forceReplay &&
       currentlyPlaying.id === id &&
-      currentlyPlaying.isPlaying &&
-      now - currentlyPlaying.lastPlayedAt < cooldownMinutes * 60 * 1000
+      currentlyPlaying.isPlaying
     ) {
       return;
     }

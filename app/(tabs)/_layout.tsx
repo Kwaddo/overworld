@@ -1,13 +1,10 @@
 import TabBarIcon from "@/components/ui/tabbar-icon";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/lib/hooks/useColorScheme";
-import { FontAwesome } from "@expo/vector-icons";
-import { Tabs, useNavigation } from "expo-router";
-import { Pressable } from "react-native";
+import { Tabs } from "expo-router";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const navigation = useNavigation();
 
   return (
     <Tabs
@@ -27,21 +24,6 @@ export default function TabLayout() {
         options={{
           title: "World",
           tabBarIcon: ({ color }) => <TabBarIcon name="globe" color={color} />,
-          headerRight: () => (
-            <Pressable
-              onPress={() => navigation.navigate("modal" as never)}
-              style={({ pressed }) => ({
-                opacity: pressed ? 0.5 : 1,
-                marginRight: 15,
-              })}
-            >
-              <FontAwesome
-                name="info-circle"
-                size={22}
-                color={Colors[colorScheme ?? "light"].text}
-              />
-            </Pressable>
-          ),
         }}
       />
       <Tabs.Screen
@@ -50,6 +32,22 @@ export default function TabLayout() {
           title: "Encounters",
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="exclamation" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ color }) => <TabBarIcon name="cog" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: "History",
+          tabBarIcon: ({ color }) => (
+            <TabBarIcon name="question" color={color} />
           ),
         }}
       />

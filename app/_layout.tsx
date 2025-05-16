@@ -3,6 +3,7 @@ import {
   useWifiSongMapping,
 } from "@/contexts/wifisongmaps.provider";
 import { useColorScheme } from "@/lib/hooks/useColorScheme";
+import { registerBackgroundTask } from "@/lib/utils/background";
 import {
   DarkTheme,
   DefaultTheme,
@@ -17,15 +18,22 @@ import "react-native-reanimated";
 const WifiSongChecker = () => {
   const { playSongForCurrentWifi } = useWifiSongMapping();
   const intervalRef = useRef<number | null>(null);
+  const initialCheckDoneRef = useRef(false);
 
   useEffect(() => {
-    playSongForCurrentWifi();
+    const initialCheckTimer = setTimeout(() => {
+      playSongForCurrentWifi();
+      initialCheckDoneRef.current = true;
+    }, 1000);
 
     intervalRef.current = setInterval(() => {
-      playSongForCurrentWifi();
+      if (initialCheckDoneRef.current) {
+        playSongForCurrentWifi();
+      }
     }, 5000);
 
     return () => {
+      clearTimeout(initialCheckTimer);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
@@ -40,6 +48,14 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
+
+  useEffect(() => {
+    const setupBackgroundTask = async () => {
+      await registerBackgroundTask();
+    };
+
+    setupBackgroundTask();
+  }, []);
 
   if (!loaded) {
     return null;

@@ -3,7 +3,7 @@ import WifiList from "@/components/world/wifi-list";
 import { useWifiSongMapping } from "@/contexts/wifisongmaps.provider";
 import { useFocusEffect } from "@react-navigation/native";
 import { Stack } from "expo-router";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 
 const HomeScreen = () => {
@@ -15,21 +15,9 @@ const HomeScreen = () => {
     refreshMappings,
   } = useWifiSongMapping();
 
-  const wifiIntervalRef = useRef<number | null>(null);
-
   useEffect(() => {
     loadMappings();
     getCurrentWifi();
-
-    wifiIntervalRef.current = setInterval(() => {
-      getCurrentWifi();
-    }, 3000);
-
-    return () => {
-      if (wifiIntervalRef.current) {
-        clearInterval(wifiIntervalRef.current);
-      }
-    };
   }, [getCurrentWifi, loadMappings]);
 
   useFocusEffect(
