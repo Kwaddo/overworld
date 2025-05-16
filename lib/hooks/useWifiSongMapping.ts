@@ -10,7 +10,7 @@ import {
   saveMappingUtil,
 } from "../utils/mappings";
 
-export function useWifiSongMapping() {
+export const useWifiSongMapping = () => {
   const previousWifiRef = useRef<{
     ssid: string | null;
     bssid: string | null;
@@ -173,4 +173,4 @@ export function useWifiSongMapping() {
     deleteMapping,
     playSongForCurrentWifi,
   };
-}
+};

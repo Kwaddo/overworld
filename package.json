@@ -7,6 +7,7 @@
     "reset-project": "node ./scripts/reset-project.js",
     "cleanup": "rm -rf *.ipa *.apk *.aab",
     "build:android:dev": "eas build -p android --local --profile development --clear-cache",
+    "build:android:preview": "eas build -p android --local --profile preview --clear-cache",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
