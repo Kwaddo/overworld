@@ -35,7 +35,6 @@ export const playSound = async (
   options: {
     forceReplay?: boolean;
     looping?: boolean;
-    cooldownMinutes?: number;
   } = {}
 ): Promise<void | Audio.Sound | null> => {
   try {
@@ -52,11 +51,17 @@ export const playSound = async (
 
     await stopSound();
 
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: true,
-      shouldDuckAndroid: true,
-    });
+    try {
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
+        allowsRecordingIOS: false,
+      });
+    } catch (audioModeError) {
+      console.error("Error setting audio mode:", audioModeError);
+    }
 
     const { sound: newSound } = await Audio.Sound.createAsync(
       { uri },
@@ -72,14 +77,20 @@ export const playSound = async (
     currentSound = newSound;
 
     newSound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded && status.didJustFinish) {
-        currentlyPlaying.isPlaying = false;
+      if (status.isLoaded) {
+        if (status.didJustFinish) {
+          currentlyPlaying.isPlaying = false;
+        } else if (!status.isPlaying && currentlyPlaying.isPlaying) {
+          currentlyPlaying.isPlaying = false;
+        }
       }
     });
 
     return newSound;
   } catch (error) {
     console.error("Error playing sound:", error);
+    currentlyPlaying.isPlaying = false;
+    currentSound = null;
     return null;
   }
 };

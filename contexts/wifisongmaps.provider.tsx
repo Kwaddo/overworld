@@ -203,26 +203,63 @@ export const WiFiSongMappingProvider: React.FC<{
 
   const playSongForCurrentWifi = useCallback(
     async (forcePlay = false) => {
-      const { bssid, ssid } = await getCurrentWifi();
+      try {
+        const { bssid, ssid } = await getCurrentWifi();
 
-      if (!bssid || !ssid) {
-        await stopSound();
-        return;
-      }
+        if (!bssid || !ssid) {
+          await stopSound();
+          return;
+        }
 
-      const allMappings = await loadMappings();
-      const mapping = allMappings.find((m) => m.bssid === bssid);
+        const allMappings = await loadMappings();
+        const mapping = allMappings.find((m) => m.bssid === bssid);
 
-      if (mapping) {
-        await playSound(mapping.songUri, mapping.bssid, {
-          forceReplay: forcePlay,
-        });
-      } else {
+        if (mapping) {
+          await playSound(mapping.songUri, mapping.bssid, {
+            forceReplay: forcePlay,
+          });
+        } else {
+          await stopSound();
+        }
+      } catch (error) {
+        console.error("Error playing song for current WiFi:", error);
         await stopSound();
       }
     },
     [getCurrentWifi, loadMappings]
   );
+
+  useEffect(() => {
+    let initialCheckTimeout: ReturnType<typeof setTimeout>;
+    let intervalId: ReturnType<typeof setInterval>;
+
+    const setupWifiMonitoring = async () => {
+      if (Platform.OS === "android") {
+        await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        );
+      }
+
+      initialCheckTimeout = setTimeout(async () => {
+        await playSongForCurrentWifi(true);
+      }, 1000);
+
+      intervalId = setInterval(async () => {
+        try {
+          await playSongForCurrentWifi();
+        } catch (error) {
+          console.error("Error in WiFi check interval:", error);
+        }
+      }, 7000);
+    };
+
+    setupWifiMonitoring();
+
+    return () => {
+      clearTimeout(initialCheckTimeout);
+      clearInterval(intervalId);
+    };
+  }, [playSongForCurrentWifi]);
 
   const contextValue: WiFiSongMappingContextType = {
     mappings,
