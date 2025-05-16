@@ -1,4 +1,4 @@
-import { useWifiSongMapping } from "@/lib/hooks/useWifiSongMapping";
+import { useWifiSongMapping } from "@/contexts/wifisongmaps.provider";
 import { getDocumentAsync } from "expo-document-picker";
 import { FC } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";

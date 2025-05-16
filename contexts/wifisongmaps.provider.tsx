@@ -1,16 +1,52 @@
-import { useCallback, useRef, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { PermissionsAndroid, Platform } from "react-native";
 import WifiManager from "react-native-wifi-reborn";
-import { WifiSongMapping } from "../types/wifi";
-import { isPlaying, playSound, stopSound } from "../utils/controls";
+import { WifiSongMapping } from "../lib/types/wifi";
+import { playSound, stopSound } from "../lib/utils/controls";
 import {
   deleteMappingUtil,
   getMappingByBSSID,
   loadMappingsUtil,
   saveMappingUtil,
-} from "../utils/mappings";
+} from "../lib/utils/mappings";
 
-export const useWifiSongMapping = () => {
+type WiFiSongMappingContextType = {
+  mappings: WifiSongMapping[];
+  currentWifi: {
+    ssid: string;
+    bssid: string | null;
+  };
+  loadMappings: () => Promise<WifiSongMapping[]>;
+  getCurrentWifi: () => Promise<{
+    ssid: string;
+    bssid: string | null;
+  }>;
+  saveMapping: (
+    bssid: string,
+    ssid: string,
+    songUri: string,
+    songName: string
+  ) => Promise<boolean>;
+  deleteMapping: (bssid: string) => Promise<boolean>;
+  playSongForCurrentWifi: () => Promise<void>;
+  testMapping: (bssid: string) => Promise<boolean>;
+  refreshMappings: () => void;
+};
+
+const WiFiSongMappingContext = createContext<
+  WiFiSongMappingContextType | undefined
+>(undefined);
+
+export const WiFiSongMappingProvider: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const previousWifiRef = useRef<{
     ssid: string | null;
     bssid: string | null;
@@ -28,11 +64,28 @@ export const useWifiSongMapping = () => {
     bssid: null,
   });
 
-  const loadMappings = useCallback(async () => {
-    const mappingsArray = await loadMappingsUtil();
-    setMappings(mappingsArray);
-    return mappingsArray;
+  const [refreshFlag, setRefreshFlag] = useState(0);
+
+  const refreshMappings = useCallback(() => {
+    setRefreshFlag((prev) => prev + 1);
   }, []);
+
+  const loadMappings = useCallback(async () => {
+    try {
+      console.log("Loading mappings...");
+      const mappingsArray = await loadMappingsUtil();
+      console.log(`Loaded ${mappingsArray.length} mappings`);
+      setMappings(mappingsArray);
+      return mappingsArray;
+    } catch (error) {
+      console.error("Error in loadMappings:", error);
+      return [];
+    }
+  }, []);
+
+  useEffect(() => {
+    loadMappings();
+  }, [loadMappings, refreshFlag]);
 
   const getCurrentWifi = useCallback(async () => {
     if (Platform.OS === "android") {
@@ -46,10 +99,7 @@ export const useWifiSongMapping = () => {
       let bssid = null;
 
       if (!ssid || ssid === "") {
-        if (previousWifiRef.current.ssid) {
-          await stopSound();
-        }
-
+        await stopSound();
         previousWifiRef.current = { ssid: null, bssid: null };
         setCurrentWifi({ ssid: "", bssid: null });
         return { ssid: "", bssid: null };
@@ -72,10 +122,8 @@ export const useWifiSongMapping = () => {
       setCurrentWifi({ ssid, bssid });
 
       if (wifiChanged) {
-        setCurrentWifi({ ssid, bssid });
         previousWifiRef.current = { ssid, bssid };
-
-        playSongForCurrentWifiImmediate({ ssid, bssid });
+        await playSongForCurrentWifiImmediate({ ssid, bssid });
       }
 
       return { ssid, bssid };
@@ -92,22 +140,31 @@ export const useWifiSongMapping = () => {
     async (bssid: string, ssid: string, songUri: string, songName: string) => {
       const result = await saveMappingUtil(bssid, ssid, songUri, songName);
       if (result) {
-        await loadMappings();
+        refreshMappings();
       }
       return result;
     },
-    [loadMappings]
+    [refreshMappings]
   );
 
   const deleteMapping = useCallback(
     async (bssid: string) => {
-      const result = await deleteMappingUtil(bssid);
-      if (result) {
-        await loadMappings();
+      console.log(`Deleting mapping for BSSID: ${bssid}`);
+
+      if (currentWifi.bssid === bssid) {
+        await stopSound();
       }
+
+      const result = await deleteMappingUtil(bssid);
+
+      if (result) {
+        console.log("Delete successful, refreshing mappings");
+        refreshMappings();
+      }
+
       return result;
     },
-    [loadMappings]
+    [currentWifi, refreshMappings]
   );
 
   const playSongForCurrentWifiImmediate = async (wifiInfo: {
@@ -116,14 +173,8 @@ export const useWifiSongMapping = () => {
   }) => {
     const { bssid, ssid } = wifiInfo;
 
-    if (!bssid && !ssid) {
+    if (!bssid || !ssid) {
       await stopSound();
-      return;
-    }
-
-    if (!bssid) return;
-
-    if (isPlaying(bssid)) {
       return;
     }
 
@@ -137,20 +188,29 @@ export const useWifiSongMapping = () => {
       }
     } catch (error) {
       console.error("Error in immediate playback:", error);
+      await stopSound();
     }
   };
+
+  const testMapping = useCallback(async (bssid: string) => {
+    try {
+      const mapping = await getMappingByBSSID(bssid);
+      if (mapping) {
+        await playSound(mapping.songUri, bssid, { forceReplay: true });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error testing mapping:", error);
+      return false;
+    }
+  }, []);
 
   const playSongForCurrentWifi = useCallback(async () => {
     const { bssid, ssid } = await getCurrentWifi();
 
-    if (!bssid && !ssid) {
+    if (!bssid || !ssid) {
       await stopSound();
-      return;
-    }
-
-    if (!bssid) return;
-
-    if (isPlaying(bssid)) {
       return;
     }
 
@@ -164,7 +224,7 @@ export const useWifiSongMapping = () => {
     }
   }, [getCurrentWifi, loadMappings]);
 
-  return {
+  const contextValue: WiFiSongMappingContextType = {
     mappings,
     currentWifi,
     loadMappings,
@@ -172,5 +232,23 @@ export const useWifiSongMapping = () => {
     saveMapping,
     deleteMapping,
     playSongForCurrentWifi,
+    testMapping,
+    refreshMappings,
   };
+
+  return (
+    <WiFiSongMappingContext.Provider value={contextValue}>
+      {children}
+    </WiFiSongMappingContext.Provider>
+  );
+};
+
+export const useWifiSongMapping = (): WiFiSongMappingContextType => {
+  const context = useContext(WiFiSongMappingContext);
+  if (context === undefined) {
+    throw new Error(
+      "useWifiSongMapping must be used within a WiFiSongMappingProvider"
+    );
+  }
+  return context;
 };

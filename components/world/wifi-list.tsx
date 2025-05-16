@@ -1,4 +1,4 @@
-import { useWifiSongMapping } from "@/lib/hooks/useWifiSongMapping";
+import { useWifiSongMapping } from "@/contexts/wifisongmaps.provider";
 import { WifiSongMapping } from "@/lib/types/wifi";
 import { FC } from "react";
 import {
@@ -15,16 +15,21 @@ interface WifiListProps {
 }
 
 const WifiList: FC<WifiListProps> = ({ mappings }) => {
-  const { playSongForCurrentWifi, deleteMapping } = useWifiSongMapping();
+  const { testMapping, deleteMapping, refreshMappings } = useWifiSongMapping();
 
-  const testMapping = async (item: any) => {
+  const handleTestMapping = async (item: WifiSongMapping) => {
     Alert.alert("Test Song", `Play the song "${item.songName}"?`, [
       { text: "Cancel" },
-      { text: "Play", onPress: () => playSongForCurrentWifi() },
+      {
+        text: "Play",
+        onPress: async () => {
+          await testMapping(item.bssid);
+        },
+      },
     ]);
   };
 
-  const confirmDelete = async (item: any) => {
+  const confirmDelete = async (item: WifiSongMapping) => {
     Alert.alert(
       "Delete Mapping",
       `Are you sure you want to remove the song for "${item.wifiName}"?`,
@@ -33,19 +38,24 @@ const WifiList: FC<WifiListProps> = ({ mappings }) => {
         {
           text: "Delete",
           onPress: async () => {
-            await deleteMapping(item.bssid);
+            const success = await deleteMapping(item.bssid);
+            if (success) {
+              refreshMappings();
+            }
           },
           style: "destructive",
         },
       ]
     );
   };
+
   return (
     <>
       <Text style={styles.title}>Your Mappings</Text>
       <FlatList
         data={mappings}
         keyExtractor={(item) => item.bssid}
+        extraData={mappings}
         renderItem={({ item }) => (
           <View style={styles.mappingItem}>
             <Text style={styles.networkName}>{item.wifiName}</Text>
@@ -53,7 +63,7 @@ const WifiList: FC<WifiListProps> = ({ mappings }) => {
             <View style={styles.actionButtons}>
               <TouchableOpacity
                 style={[styles.actionButton, styles.playButton]}
-                onPress={() => testMapping(item)}
+                onPress={() => handleTestMapping(item)}
               >
                 <Text style={styles.actionButtonText}>Test</Text>
               </TouchableOpacity>

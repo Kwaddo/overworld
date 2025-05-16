@@ -1,4 +1,9 @@
 import {
+  WiFiSongMappingProvider,
+  useWifiSongMapping,
+} from "@/contexts/wifisongmaps.provider";
+import { useColorScheme } from "@/lib/hooks/useColorScheme";
+import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
@@ -8,16 +13,8 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef } from "react";
 import "react-native-reanimated";
-import { useWifiSongMapping } from "../lib/hooks/useWifiSongMapping";
 
-import { useColorScheme } from "@/lib/hooks/useColorScheme";
-
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-  });
-
+const WifiSongChecker = () => {
   const { playSongForCurrentWifi } = useWifiSongMapping();
   const intervalRef = useRef<number | null>(null);
 
@@ -26,7 +23,7 @@ export default function RootLayout() {
 
     intervalRef.current = setInterval(() => {
       playSongForCurrentWifi();
-    }, 1000);
+    }, 5000);
 
     return () => {
       if (intervalRef.current) {
@@ -35,17 +32,29 @@ export default function RootLayout() {
     };
   }, [playSongForCurrentWifi]);
 
+  return null;
+};
+
+export default function RootLayout() {
+  const colorScheme = useColorScheme();
+  const [loaded] = useFonts({
+    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
+  });
+
   if (!loaded) {
     return null;
   }
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <WiFiSongMappingProvider>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <WifiSongChecker />
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </WiFiSongMappingProvider>
   );
 }

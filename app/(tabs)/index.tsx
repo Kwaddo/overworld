@@ -1,25 +1,49 @@
 import CurrentWifiCard from "@/components/world/current-wifi-card";
 import WifiList from "@/components/world/wifi-list";
-import { useWifiSongMapping } from "@/lib/hooks/useWifiSongMapping";
+import { useWifiSongMapping } from "@/contexts/wifisongmaps.provider";
+import { useFocusEffect } from "@react-navigation/native";
 import { Stack } from "expo-router";
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 
 const HomeScreen = () => {
-  const { mappings, currentWifi, loadMappings, getCurrentWifi } =
-    useWifiSongMapping();
+  const {
+    mappings,
+    currentWifi,
+    loadMappings,
+    getCurrentWifi,
+    refreshMappings,
+  } = useWifiSongMapping();
+
+  const wifiIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     loadMappings();
     getCurrentWifi();
+
+    wifiIntervalRef.current = setInterval(() => {
+      getCurrentWifi();
+    }, 3000);
+
+    return () => {
+      if (wifiIntervalRef.current) {
+        clearInterval(wifiIntervalRef.current);
+      }
+    };
   }, [getCurrentWifi, loadMappings]);
+
+  useFocusEffect(
+    useCallback(() => {
+      getCurrentWifi();
+      refreshMappings();
+      return () => {};
+    }, [getCurrentWifi, refreshMappings])
+  );
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: "WiFi Song Mapper" }} />
-
       <CurrentWifiCard ssid={currentWifi.ssid} bssid={currentWifi.bssid} />
-
       <WifiList mappings={mappings} />
     </View>
   );
