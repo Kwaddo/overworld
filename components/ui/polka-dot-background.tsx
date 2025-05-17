@@ -1,5 +1,5 @@
 import { LightColors } from "@/constants/Colors";
-import React, { useState } from "react";
+import { FC, ReactNode, useState } from "react";
 import { StyleSheet, View, ViewStyle } from "react-native";
 
 interface Props {
@@ -7,10 +7,10 @@ interface Props {
   dotSize?: number;
   spacing?: number;
   style?: ViewStyle;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-export const PolkaDotBackground: React.FC<Props> = ({
+export const PolkaDotBackground: FC<Props> = ({
   dotColor = LightColors.primary,
   dotSize = 1,
   spacing = 40,
