@@ -40,6 +40,7 @@ const HomeScreen = () => {
             headerTitleStyle: {
               fontFamily: "NintendoDSBIOS",
               fontSize: 28,
+              color: LightColors.background,
             },
           }}
         />

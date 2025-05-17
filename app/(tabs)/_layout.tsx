@@ -1,15 +1,13 @@
 import TabBarIcon from "@/components/ui/tabbar-icon";
-import { Colors } from "@/constants/Colors";
-import { useColorScheme } from "@/lib/hooks/useColorScheme";
+import { LightColors } from "@/constants/Colors";
 import { Tabs } from "expo-router";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarActiveTintColor: LightColors.primary,
+        tabBarInactiveTintColor: LightColors.background,
         tabBarStyle: {
           backgroundColor: "#1e1e2e",
         },
