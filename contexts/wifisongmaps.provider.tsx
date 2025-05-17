@@ -1,5 +1,6 @@
-import React, {
+import {
   createContext,
+  FC,
   useCallback,
   useContext,
   useEffect,
@@ -8,7 +9,7 @@ import React, {
 } from "react";
 import { PermissionsAndroid, Platform } from "react-native";
 import WifiManager from "react-native-wifi-reborn";
-import { WifiSongMapping } from "../lib/types/wifi";
+import { WifiSongMapping, WiFiSongMappingContextType } from "../lib/types/wifi";
 import { playSound, stopSound } from "../lib/utils/controls";
 import {
   deleteMappingUtil,
@@ -17,34 +18,11 @@ import {
   saveMappingUtil,
 } from "../lib/utils/mappings";
 
-type WiFiSongMappingContextType = {
-  mappings: WifiSongMapping[];
-  currentWifi: {
-    ssid: string;
-    bssid: string | null;
-  };
-  loadMappings: () => Promise<WifiSongMapping[]>;
-  getCurrentWifi: () => Promise<{
-    ssid: string;
-    bssid: string | null;
-  }>;
-  saveMapping: (
-    bssid: string,
-    ssid: string,
-    songUri: string,
-    songName: string
-  ) => Promise<boolean>;
-  deleteMapping: (bssid: string) => Promise<boolean>;
-  playSongForCurrentWifi: () => Promise<void>;
-  testMapping: (bssid: string) => Promise<boolean>;
-  refreshMappings: () => void;
-};
-
 const WiFiSongMappingContext = createContext<
   WiFiSongMappingContextType | undefined
 >(undefined);
 
-export const WiFiSongMappingProvider: React.FC<{
+export const WiFiSongMappingProvider: FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
   const previousWifiRef = useRef<{

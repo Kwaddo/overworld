@@ -11,10 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": [
-          "audio",
-          "fetch"
-        ]
+        "UIBackgroundModes": ["audio", "fetch"]
       }
     },
     "android": {
@@ -47,7 +44,7 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-av"
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true

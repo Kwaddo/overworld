@@ -13,7 +13,7 @@ import "react-native-reanimated";
 const RootLayout = () => {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
+    NintendoDSBIOS: require("../assets/fonts/Nintendo-DS-BIOS.ttf"),
   });
 
   if (!loaded) {

@@ -5,10 +5,10 @@ import {
   Alert,
   FlatList,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import AppText from "../ui/ds-text";
 
 interface WifiListProps {
   mappings: WifiSongMapping[];
@@ -51,33 +51,33 @@ const WifiList: FC<WifiListProps> = ({ mappings }) => {
 
   return (
     <>
-      <Text style={styles.title}>Your Mappings</Text>
+      <AppText style={styles.title}>Your Mappings</AppText>
       <FlatList
         data={mappings}
         keyExtractor={(item) => item.bssid}
         extraData={mappings}
         renderItem={({ item }) => (
           <View style={styles.mappingItem}>
-            <Text style={styles.networkName}>{item.wifiName}</Text>
-            <Text style={styles.songName}>{item.songName}</Text>
+            <AppText style={styles.networkName}>{item.wifiName}</AppText>
+            <AppText style={styles.songName}>{item.songName}</AppText>
             <View style={styles.actionButtons}>
               <TouchableOpacity
                 style={[styles.actionButton, styles.playButton]}
                 onPress={() => handleTestMapping(item)}
               >
-                <Text style={styles.actionButtonText}>Test</Text>
+                <AppText style={styles.actionButtonText}>Test</AppText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionButton, styles.deleteButton]}
                 onPress={() => confirmDelete(item)}
               >
-                <Text style={styles.actionButtonText}>Delete</Text>
+                <AppText style={styles.actionButtonText}>Delete</AppText>
               </TouchableOpacity>
             </View>
           </View>
         )}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No mappings created yet</Text>
+          <AppText style={styles.emptyText}>No mappings created yet</AppText>
         }
       />
     </>
@@ -86,8 +86,8 @@ const WifiList: FC<WifiListProps> = ({ mappings }) => {
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 32,
+    alignSelf: "center",
     color: "#cdd6f4",
     marginTop: 24,
     marginBottom: 16,
@@ -99,12 +99,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   networkName: {
-    fontSize: 18,
+    fontSize: 28,
     color: "#f5e0dc",
-    fontWeight: "bold",
   },
   songName: {
-    fontSize: 14,
+    fontSize: 18,
     color: "#a6adc8",
     marginTop: 4,
     marginBottom: 12,

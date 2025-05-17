@@ -1,6 +1,8 @@
-import { Audio } from "expo-av";
+import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
 
-let currentSound: Audio.Sound | null = null;
+// Create a global audio player instance
+const audioPlayer = createAudioPlayer();
+
 let currentlyPlaying = {
   id: null as string | null,
   isPlaying: false,
@@ -11,15 +13,12 @@ let currentlyPlaying = {
  * Stops any currently playing sound
  */
 export const stopSound = async (): Promise<void> => {
-  if (currentSound) {
-    try {
-      await currentSound.stopAsync();
-      await currentSound.unloadAsync();
-      currentSound = null;
-      currentlyPlaying.isPlaying = false;
-    } catch (error) {
-      console.error("Error stopping sound:", error);
-    }
+  try {
+    await audioPlayer.pause();
+    await audioPlayer.remove();
+    currentlyPlaying.isPlaying = false;
+  } catch (error) {
+    console.error("Error stopping sound:", error);
   }
 };
 
@@ -36,7 +35,7 @@ export const playSound = async (
     forceReplay?: boolean;
     looping?: boolean;
   } = {}
-): Promise<void | Audio.Sound | null> => {
+): Promise<void> => {
   try {
     const { forceReplay = false, looping = false } = options;
     const now = Date.now();
@@ -52,21 +51,19 @@ export const playSound = async (
     await stopSound();
 
     try {
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-        allowsRecordingIOS: false,
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        shouldPlayInBackground: true,
       });
     } catch (audioModeError) {
       console.error("Error setting audio mode:", audioModeError);
     }
 
-    const { sound: newSound } = await Audio.Sound.createAsync(
-      { uri },
-      { shouldPlay: true, isLooping: looping }
-    );
+    await audioPlayer.replace({ uri });
+
+    audioPlayer.loop = looping;
+
+    await audioPlayer.play();
 
     currentlyPlaying = {
       id,
@@ -74,24 +71,16 @@ export const playSound = async (
       lastPlayedAt: now,
     };
 
-    currentSound = newSound;
-
-    newSound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded) {
-        if (status.didJustFinish) {
-          currentlyPlaying.isPlaying = false;
-        } else if (!status.isPlaying && currentlyPlaying.isPlaying) {
-          currentlyPlaying.isPlaying = false;
-        }
+    const statusCheckInterval = setInterval(() => {
+      if (!audioPlayer.playing && currentlyPlaying.isPlaying) {
+        currentlyPlaying.isPlaying = false;
+        clearInterval(statusCheckInterval);
       }
-    });
-
-    return newSound;
+    }, 500);
   } catch (error) {
     console.error("Error playing sound:", error);
     currentlyPlaying.isPlaying = false;
-    currentSound = null;
-    return null;
+    return;
   }
 };
 
