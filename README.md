@@ -1,50 +1,79 @@
-# Welcome to your Expo app 👋
+# Overworld: WiFi-Triggered Music Player 🎵
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Overworld is a React Native mobile app that associates songs with WiFi networks. When you connect to a mapped WiFi network, your chosen song plays automatically, creating a personalized soundtrack for different locations.
 
-## Get started
+## Features
 
-1. Install dependencies
+- 🎵 Map songs to specific WiFi networks
+- 🔄 Automatically play songs when connecting to mapped networks
+- 🎧 Test mapped songs without switching networks
+- 🗑️ Easily delete WiFi-song associations
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v16 or newer)
+- Expo CLI (`npm install -g expo-cli`)
+- Android device/emulator or iOS device/simulator
+
+### Installation
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/yourusername/overworld.git
+   cd overworld
+   ```
+
+2. Install dependencies:
 
    ```bash
    npm install
    ```
 
-2. Start the app
+3. Start the app:
 
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+### Required Permissions
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- **Android**: WiFi state access, location (for WiFi scanning), background services
+- **iOS**: Background audio playback
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## How It Works
 
-## Get a fresh project
+1. **Connect** to a WiFi network
+2. **Select** a song to associate with that network
+3. **Enjoy** automatic playback whenever you connect to that network
 
-When you're ready, run:
+## Project Structure
+
+- `/app` - Main application screens using Expo Router
+- `/components` - Reusable UI components
+- `/contexts` - React context providers
+- `/lib` - Utility functions and type definitions
+
+## Development
+
+For local development, you can build a development client:
 
 ```bash
-npm run reset-project
+npm run build:android:dev
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Or a preview build:
 
-## Learn more
+```bash
+npm run build:android:preview
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Learn More
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+For more information about the technologies used:
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [Expo Documentation](https://docs.expo.dev/)
+- [React Native](https://reactnative.dev/docs/getting-started)
+- [Expo Router](https://docs.expo.dev/router/introduction/)
