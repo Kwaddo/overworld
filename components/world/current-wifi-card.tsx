@@ -1,6 +1,6 @@
 import { LightColors } from "@/constants/Colors";
 import { useWifiSongMapping } from "@/contexts/wifisongmaps.provider";
-import { getDocumentAsync } from "expo-document-picker";
+import { DocumentPickerAdapter } from "@/lib/hooks/useDocumentPicker";
 import { FC } from "react";
 import { Alert, StyleSheet, TouchableOpacity, View } from "react-native";
 import DSText from "../ui/ds-text";
@@ -22,15 +22,14 @@ const CurrentWifiCard: FC<CurrentWifiCardProps> = ({ ssid, bssid }) => {
         return;
       }
 
-      const result = await getDocumentAsync({
-        type: "audio/*",
-        copyToCacheDirectory: true,
-      });
+      const file = await DocumentPickerAdapter.getDocument();
 
-      if (result.canceled) return;
-
-      const file = result.assets[0];
       const wifibssid = bssid || `ssid:${ssid}`;
+
+      if (!file) {
+        Alert.alert("Error", "No file selected");
+        return;
+      }
 
       const success = await saveMapping(wifibssid, ssid, file.uri, file.name);
 
