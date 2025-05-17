@@ -1,7 +1,9 @@
+import { LightColors } from "@/constants/Colors";
 import { useWifiSongMapping } from "@/contexts/wifisongmaps.provider";
 import { getDocumentAsync } from "expo-document-picker";
 import { FC } from "react";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, TouchableOpacity, View } from "react-native";
+import DSText from "../ui/ds-text";
 
 interface CurrentWifiCardProps {
   ssid: string;
@@ -46,10 +48,10 @@ const CurrentWifiCard: FC<CurrentWifiCardProps> = ({ ssid, bssid }) => {
 
   return (
     <View style={styles.currentWifiCard}>
-      <Text style={styles.label}>Current WiFi:</Text>
-      <Text style={styles.wifiName}>{ssid || "Not connected"}</Text>
+      <DSText style={styles.label}>Current WiFi:</DSText>
+      <DSText style={styles.wifiName}>{ssid || "Not connected"}</DSText>
       <TouchableOpacity style={styles.button} onPress={addMapping}>
-        <Text style={styles.buttonText}>Map Song to This Network</Text>
+        <DSText style={styles.buttonText}>Map Song to This Network</DSText>
       </TouchableOpacity>
     </View>
   );
@@ -57,31 +59,29 @@ const CurrentWifiCard: FC<CurrentWifiCardProps> = ({ ssid, bssid }) => {
 
 const styles = StyleSheet.create({
   currentWifiCard: {
-    backgroundColor: "#313244",
+    backgroundColor: LightColors.cardBackground,
     borderRadius: 10,
     padding: 16,
   },
   label: {
-    fontSize: 16,
-    color: "#a6adc8",
+    fontSize: 22,
+    color: LightColors.textSecondary,
   },
   wifiName: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#f5e0dc",
+    fontSize: 34,
+    color: LightColors.textPrimary,
     marginVertical: 8,
   },
   button: {
-    backgroundColor: "#89b4fa",
+    backgroundColor: LightColors.primary,
     borderRadius: 8,
     padding: 12,
     marginTop: 8,
     alignItems: "center",
   },
   buttonText: {
-    color: "#1e1e2e",
-    fontWeight: "bold",
-    fontSize: 16,
+    color: LightColors.textLight,
+    fontSize: 22,
   },
 });
 

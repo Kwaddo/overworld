@@ -23,6 +23,10 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "World",
+          tabBarLabelStyle: {
+            fontFamily: "NintendoDSBIOS",
+            fontSize: 16,
+          },
           tabBarIcon: ({ color }) => <TabBarIcon name="globe" color={color} />,
         }}
       />
@@ -30,6 +34,10 @@ export default function TabLayout() {
         name="encounters"
         options={{
           title: "Encounters",
+          tabBarLabelStyle: {
+            fontFamily: "NintendoDSBIOS",
+            fontSize: 16,
+          },
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="exclamation" color={color} />
           ),
@@ -39,6 +47,10 @@ export default function TabLayout() {
         name="history"
         options={{
           title: "History",
+          tabBarLabelStyle: {
+            fontFamily: "NintendoDSBIOS",
+            fontSize: 16,
+          },
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="question" color={color} />
           ),

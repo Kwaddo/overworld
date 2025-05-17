@@ -1,5 +1,7 @@
+import { PolkaDotBackground } from "@/components/ui/polka-dot-background";
 import CurrentWifiCard from "@/components/world/current-wifi-card";
 import WifiList from "@/components/world/wifi-list";
+import { LightColors } from "@/constants/Colors";
 import { useWifiSongMapping } from "@/contexts/wifisongmaps.provider";
 import { useFocusEffect } from "@react-navigation/native";
 import { Stack } from "expo-router";
@@ -29,26 +31,30 @@ const HomeScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: "Overworld" }} />
-      <CurrentWifiCard ssid={currentWifi.ssid} bssid={currentWifi.bssid} />
-      <WifiList mappings={mappings} />
-    </View>
+    <PolkaDotBackground dotColor={LightColors.primary} dotSize={4} spacing={50}>
+      <View style={styles.container}>
+        <Stack.Screen
+          options={{
+            title: "Overworld",
+            headerTitleAlign: "center",
+            headerTitleStyle: {
+              fontFamily: "NintendoDSBIOS",
+              fontSize: 28,
+            },
+          }}
+        />
+        <CurrentWifiCard ssid={currentWifi.ssid} bssid={currentWifi.bssid} />
+        <WifiList mappings={mappings} />
+      </View>
+    </PolkaDotBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#181825",
     padding: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#cdd6f4",
-    marginTop: 24,
-    marginBottom: 16,
+    backgroundColor: "transparent",
   },
 });
 

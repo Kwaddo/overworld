@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TextProps } from "react-native";
 
-const AppText = (props: TextProps) => {
+const DSText = (props: TextProps) => {
   return <Text {...props} style={[styles.text, props.style]} />;
 };
 
@@ -10,4 +10,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AppText;
+export default DSText;

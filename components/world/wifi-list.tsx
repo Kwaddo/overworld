@@ -1,3 +1,4 @@
+import { LightColors } from "@/constants/Colors";
 import { useWifiSongMapping } from "@/contexts/wifisongmaps.provider";
 import { WifiSongMapping } from "@/lib/types/wifi";
 import { FC } from "react";
@@ -8,7 +9,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import AppText from "../ui/ds-text";
+import { SafeAreaView } from "react-native-safe-area-context";
+import DSText from "../ui/ds-text";
 
 interface WifiListProps {
   mappings: WifiSongMapping[];
@@ -50,37 +52,37 @@ const WifiList: FC<WifiListProps> = ({ mappings }) => {
   };
 
   return (
-    <>
-      <AppText style={styles.title}>Your Mappings</AppText>
+    <SafeAreaView style={{ flex: 1 }}>
+      <DSText style={styles.title}>Current Mappings</DSText>
       <FlatList
         data={mappings}
         keyExtractor={(item) => item.bssid}
         extraData={mappings}
         renderItem={({ item }) => (
           <View style={styles.mappingItem}>
-            <AppText style={styles.networkName}>{item.wifiName}</AppText>
-            <AppText style={styles.songName}>{item.songName}</AppText>
+            <DSText style={styles.networkName}>{item.wifiName}</DSText>
+            <DSText style={styles.songName}>{item.songName}</DSText>
             <View style={styles.actionButtons}>
               <TouchableOpacity
                 style={[styles.actionButton, styles.playButton]}
                 onPress={() => handleTestMapping(item)}
               >
-                <AppText style={styles.actionButtonText}>Test</AppText>
+                <DSText style={styles.actionButtonText}>Test</DSText>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionButton, styles.deleteButton]}
                 onPress={() => confirmDelete(item)}
               >
-                <AppText style={styles.actionButtonText}>Delete</AppText>
+                <DSText style={styles.actionButtonText}>Delete</DSText>
               </TouchableOpacity>
             </View>
           </View>
         )}
         ListEmptyComponent={
-          <AppText style={styles.emptyText}>No mappings created yet</AppText>
+          <DSText style={styles.emptyText}>No mappings created yet</DSText>
         }
       />
-    </>
+    </SafeAreaView>
   );
 };
 
@@ -88,23 +90,23 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     alignSelf: "center",
-    color: "#cdd6f4",
+    color: LightColors.textPrimary,
     marginTop: 24,
     marginBottom: 16,
   },
   mappingItem: {
-    backgroundColor: "#313244",
+    backgroundColor: LightColors.cardBackground,
     borderRadius: 8,
     padding: 16,
     marginBottom: 12,
   },
   networkName: {
     fontSize: 28,
-    color: "#f5e0dc",
+    color: LightColors.textPrimary,
   },
   songName: {
     fontSize: 18,
-    color: "#a6adc8",
+    color: LightColors.textSecondary,
     marginTop: 4,
     marginBottom: 12,
   },
@@ -119,17 +121,17 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   playButton: {
-    backgroundColor: "#89b4fa",
+    backgroundColor: LightColors.primary,
   },
   deleteButton: {
-    backgroundColor: "#f38ba8",
+    backgroundColor: LightColors.secondary,
   },
   actionButtonText: {
-    color: "#1e1e2e",
+    color: LightColors.textLight,
     fontWeight: "600",
   },
   emptyText: {
-    color: "#a6adc8",
+    color: LightColors.textSecondary,
     textAlign: "center",
     marginTop: 32,
     fontSize: 16,
