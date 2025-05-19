@@ -2,22 +2,19 @@ import { LightColors } from "@/constants/Colors";
 import { FC, ReactNode, useState } from "react";
 import { StyleSheet, View, ViewStyle } from "react-native";
 
-interface Props {
-  dotColor?: string;
-  dotSize?: number;
-  spacing?: number;
+interface PolkaDotBackgroundProps {
   style?: ViewStyle;
-  children: ReactNode;
+  children?: ReactNode;
 }
 
-export const PolkaDotBackground: FC<Props> = ({
-  dotColor = LightColors.primary,
-  dotSize = 1,
-  spacing = 40,
+export const PolkaDotBackground: FC<PolkaDotBackgroundProps> = ({
   style,
   children,
 }) => {
   const [layout, setLayout] = useState({ width: 0, height: 0 });
+  const dotSize = 4;
+  const spacing = 50;
+  const dotColor = LightColors.primary;
 
   const renderDots = () => {
     const dots = [];

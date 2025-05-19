@@ -1,14 +1,12 @@
 import { PolkaDotBackground } from "@/components/ui/polka-dot-background";
 import CurrentWifiCard from "@/components/world/current-wifi-card";
 import WifiList from "@/components/world/wifi-list";
-import { LightColors } from "@/constants/Colors";
 import { useWifiSongMapping } from "@/contexts/wifisongmaps.provider";
 import { useFocusEffect } from "@react-navigation/native";
-import { Stack } from "expo-router";
 import { useCallback, useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 
-const HomeScreen = () => {
+const OverworldScreen = () => {
   const {
     mappings,
     currentWifi,
@@ -31,19 +29,8 @@ const HomeScreen = () => {
   );
 
   return (
-    <PolkaDotBackground dotColor={LightColors.primary} dotSize={4} spacing={50}>
+    <PolkaDotBackground>
       <View style={styles.container}>
-        <Stack.Screen
-          options={{
-            title: "Overworld",
-            headerTitleAlign: "center",
-            headerTitleStyle: {
-              fontFamily: "NintendoDSBIOS",
-              fontSize: 28,
-              color: LightColors.background,
-            },
-          }}
-        />
         <CurrentWifiCard ssid={currentWifi.ssid} bssid={currentWifi.bssid} />
         <WifiList mappings={mappings} />
       </View>
@@ -59,4 +46,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HomeScreen;
+export default OverworldScreen;

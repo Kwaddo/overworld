@@ -11,6 +11,10 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: "#1e1e2e",
         },
+        tabBarLabelStyle: {
+          fontFamily: "NintendoDSBIOS",
+          fontSize: 12,
+        },
         headerStyle: {
           backgroundColor: "#1e1e2e",
         },
@@ -20,10 +24,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "World",
-          tabBarLabelStyle: {
+          title: "Overworld",
+          headerTitleAlign: "center",
+          headerTitleStyle: {
             fontFamily: "NintendoDSBIOS",
-            fontSize: 16,
+            fontSize: 28,
+            color: LightColors.background,
           },
           tabBarIcon: ({ color }) => <TabBarIcon name="globe" color={color} />,
         }}
@@ -32,25 +38,14 @@ export default function TabLayout() {
         name="encounters"
         options={{
           title: "Encounters",
-          tabBarLabelStyle: {
+          headerTitleAlign: "center",
+          headerTitleStyle: {
             fontFamily: "NintendoDSBIOS",
-            fontSize: 16,
+            fontSize: 28,
+            color: LightColors.background,
           },
           tabBarIcon: ({ color }) => (
             <TabBarIcon name="exclamation" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="history"
-        options={{
-          title: "History",
-          tabBarLabelStyle: {
-            fontFamily: "NintendoDSBIOS",
-            fontSize: 16,
-          },
-          tabBarIcon: ({ color }) => (
-            <TabBarIcon name="question" color={color} />
           ),
         }}
       />

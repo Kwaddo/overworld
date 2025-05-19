@@ -11,7 +11,9 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["audio", "fetch"]
+        "UIBackgroundModes": ["audio", "fetch", "bluetooth-central"],
+        "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect to nearby devices",
+        "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to connect to nearby devices"
       }
     },
     "android": {
@@ -24,7 +26,12 @@
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "android.permission.WAKE_LOCK",
         "android.permission.ACCESS_WIFI_STATE",
-        "android.permission.ACCESS_NETWORK_STATE"
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.BLUETOOTH_CONNECT"
       ],
       "package": "com.kwaddo.overworld"
     },
