@@ -1,11 +1,12 @@
+import BluetoothList from "@/components/encounters/bluetooth-list";
 import DSText from "@/components/ui/ds-text";
 import { PolkaDotBackground } from "@/components/ui/polka-dot-background";
 import { LightColors } from "@/constants/Colors";
+import { useBluetoothSongMapping } from "@/contexts/btsongmaps.provider";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
-  FlatList,
   PermissionsAndroid,
   Platform,
   StyleSheet,
@@ -19,6 +20,7 @@ import RNBluetoothClassic, {
 const EncountersScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [devices, setDevices] = useState<BluetoothDevice[]>([]);
+  const { mappings, loadMappings, refreshMappings } = useBluetoothSongMapping();
 
   const requestPermissions = async () => {
     if (Platform.OS === "android") {
@@ -74,19 +76,21 @@ const EncountersScreen = () => {
 
   useEffect(() => {
     getPairedDevices();
-  }, [getPairedDevices]);
+    loadMappings();
+  }, [getPairedDevices, loadMappings]);
 
   useFocusEffect(
     useCallback(() => {
       getPairedDevices();
+      refreshMappings();
       return () => {};
-    }, [getPairedDevices])
+    }, [getPairedDevices, refreshMappings])
   );
 
   return (
     <PolkaDotBackground>
       <View style={styles.container}>
-        <DSText style={styles.title}>Paired Devices</DSText>
+        <DSText style={styles.title}>Bluetooth Encounters</DSText>
 
         <TouchableOpacity
           style={[styles.scanButton, isLoading ? styles.scanningButton : null]}
@@ -98,25 +102,7 @@ const EncountersScreen = () => {
           </DSText>
         </TouchableOpacity>
 
-        <FlatList
-          data={devices}
-          keyExtractor={(item) => item.address}
-          renderItem={({ item }) => (
-            <View style={styles.deviceItem}>
-              <DSText style={styles.deviceName}>
-                {item.name || item.address}
-              </DSText>
-              <DSText style={styles.deviceDetails}>MAC: {item.address}</DSText>
-            </View>
-          )}
-          ListEmptyComponent={
-            <DSText style={styles.emptyText}>
-              {isLoading
-                ? "Loading paired devices..."
-                : "No paired devices found."}
-            </DSText>
-          }
-        />
+        <BluetoothList devices={devices} mappings={mappings} />
       </View>
     </PolkaDotBackground>
   );
@@ -148,27 +134,6 @@ const styles = StyleSheet.create({
   scanButtonText: {
     color: LightColors.textLight,
     fontSize: 18,
-  },
-  deviceItem: {
-    backgroundColor: LightColors.cardBackground,
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-  },
-  deviceName: {
-    fontSize: 20,
-    color: LightColors.textPrimary,
-  },
-  deviceDetails: {
-    fontSize: 14,
-    color: LightColors.textSecondary,
-    marginTop: 4,
-  },
-  emptyText: {
-    color: LightColors.textSecondary,
-    textAlign: "center",
-    marginTop: 32,
-    fontSize: 16,
   },
 });
 

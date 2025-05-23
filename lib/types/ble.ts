@@ -1,13 +1,13 @@
 export interface BluetoothSongMapping {
-  address: string;
-  deviceName: string;
+  id: string;
+  name: string;
   songUri: string;
   songName: string;
 }
 
 export type BluetoothSongMap = {
-  [address: string]: {
-    deviceName: string;
+  [id: string]: {
+    name: string;
     songUri: string;
     songName: string;
   };

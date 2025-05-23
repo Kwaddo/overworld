@@ -1,3 +1,4 @@
+import { BluetoothSongMappingProvider } from "@/contexts/btsongmaps.provider";
 import { WiFiSongMappingProvider } from "@/contexts/wifisongmaps.provider";
 import { useColorScheme } from "@/lib/hooks/useColorScheme";
 import {
@@ -21,15 +22,19 @@ const RootLayout = () => {
   }
 
   return (
-    <WiFiSongMappingProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
-    </WiFiSongMappingProvider>
+    <BluetoothSongMappingProvider>
+      <WiFiSongMappingProvider>
+        <ThemeProvider
+          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+        >
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </WiFiSongMappingProvider>
+    </BluetoothSongMappingProvider>
   );
 };
 
