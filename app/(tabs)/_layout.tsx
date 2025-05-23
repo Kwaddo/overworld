@@ -49,6 +49,19 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="info"
+        options={{
+          title: "Info",
+          headerTitleAlign: "center",
+          headerTitleStyle: {
+            fontFamily: "NintendoDSBIOS",
+            fontSize: 28,
+            color: LightColors.background,
+          },
+          tabBarIcon: ({ color }) => <TabBarIcon name="info" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
