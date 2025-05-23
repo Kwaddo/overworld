@@ -10,11 +10,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { BluetoothDevice } from "react-native-bluetooth-classic";
+import { Device } from "react-native-ble-plx";
 import DSText from "../ui/ds-text";
 
 interface BluetoothListProps {
-  devices: BluetoothDevice[];
+  devices: Device[];
   mappings: BluetoothSongMapping[];
 }
 
@@ -22,11 +22,11 @@ const BluetoothList: FC<BluetoothListProps> = ({ devices, mappings }) => {
   const { testMapping, deleteMapping, saveMapping, refreshMappings } =
     useBluetoothSongMapping();
 
-  const getMappingForDevice = (deviceAddress: string) => {
-    return mappings.find((mapping) => mapping.id === deviceAddress);
+  const getMappingForDevice = (deviceId: string) => {
+    return mappings.find((mapping) => mapping.id === deviceId);
   };
 
-  const handleAddMapping = async (device: BluetoothDevice) => {
+  const handleAddMapping = async (device: Device) => {
     try {
       const file = await DocumentPickerAdapter.getDocument();
 
@@ -36,8 +36,8 @@ const BluetoothList: FC<BluetoothListProps> = ({ devices, mappings }) => {
       }
 
       const success = await saveMapping(
-        device.address,
-        device.name || device.address,
+        device.id,
+        device.name || device.id,
         file.uri,
         file.name
       );
@@ -45,9 +45,7 @@ const BluetoothList: FC<BluetoothListProps> = ({ devices, mappings }) => {
       if (success) {
         Alert.alert(
           "Success",
-          `Successfully mapped "${device.name || device.address}" to "${
-            file.name
-          }"`
+          `Successfully mapped "${device.name || device.id}" to "${file.name}"`
         );
         refreshMappings();
       } else {
@@ -59,8 +57,8 @@ const BluetoothList: FC<BluetoothListProps> = ({ devices, mappings }) => {
     }
   };
 
-  const handleTestMapping = async (device: BluetoothDevice) => {
-    const mapping = getMappingForDevice(device.address);
+  const handleTestMapping = async (device: Device) => {
+    const mapping = getMappingForDevice(device.id);
     if (!mapping) return;
 
     Alert.alert("Test Song", `Play the song "${mapping.songName}"?`, [
@@ -68,27 +66,27 @@ const BluetoothList: FC<BluetoothListProps> = ({ devices, mappings }) => {
       {
         text: "Play",
         onPress: async () => {
-          await testMapping(device.address);
+          await testMapping(device.id);
         },
       },
     ]);
   };
 
-  const confirmDelete = async (device: BluetoothDevice) => {
-    const mapping = getMappingForDevice(device.address);
+  const confirmDelete = async (device: Device) => {
+    const mapping = getMappingForDevice(device.id);
     if (!mapping) return;
 
     Alert.alert(
       "Delete Mapping",
       `Are you sure you want to remove the song for "${
-        device.name || device.address
+        device.name || device.id
       }"?`,
       [
         { text: "Cancel" },
         {
           text: "Delete",
           onPress: async () => {
-            const success = await deleteMapping(device.address);
+            const success = await deleteMapping(device.id);
             if (success) {
               refreshMappings();
             }
@@ -99,9 +97,9 @@ const BluetoothList: FC<BluetoothListProps> = ({ devices, mappings }) => {
     );
   };
 
-  const renderDevice = ({ item: device }: { item: BluetoothDevice }) => {
-    const mapping = getMappingForDevice(device.address);
-    const deviceName = device.name || device.address;
+  const renderDevice = ({ item: device }: { item: Device }) => {
+    const mapping = getMappingForDevice(device.id);
+    const deviceName = device.name || device.id;
 
     return (
       <View style={styles.deviceItem}>
@@ -118,7 +116,14 @@ const BluetoothList: FC<BluetoothListProps> = ({ devices, mappings }) => {
             numberOfLines={1}
             ellipsizeMode="middle"
           >
-            MAC: {device.address}
+            ID: {device.id}
+          </DSText>
+          <DSText
+            style={styles.deviceDetails}
+            numberOfLines={1}
+            ellipsizeMode="middle"
+          >
+            Signal: {device.rssi} dBm
           </DSText>
           {mapping && (
             <DSText
@@ -163,11 +168,11 @@ const BluetoothList: FC<BluetoothListProps> = ({ devices, mappings }) => {
   return (
     <FlatList
       data={devices}
-      keyExtractor={(item) => item.address}
+      keyExtractor={(item) => item.id}
       renderItem={renderDevice}
       extraData={mappings}
       ListEmptyComponent={
-        <DSText style={styles.emptyText}>No paired devices found.</DSText>
+        <DSText style={styles.emptyText}>No nearby devices found.</DSText>
       }
     />
   );

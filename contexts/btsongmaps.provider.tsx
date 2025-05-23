@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { PermissionsAndroid, Platform } from "react-native";
-import RNBluetoothClassic from "react-native-bluetooth-classic";
+import { BleManager, Device } from "react-native-ble-plx";
 import {
   BluetoothSongMapping,
   BluetoothSongMappingContextType,
@@ -26,6 +26,8 @@ import {
   stopSound,
 } from "../lib/utils/controls";
 
+const bleManager = new BleManager();
+
 const BluetoothSongMappingContext = createContext<
   BluetoothSongMappingContextType | undefined
 >(undefined);
@@ -39,7 +41,12 @@ export const BluetoothSongMappingProvider: FC<{
     id: string;
     name: string;
   } | null>(null);
+  const [nearbyDevices, setNearbyDevices] = useState<Device[]>([]);
   const previousDeviceRef = useRef<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const scanIntervalRef = useRef<number | null>(null);
+  const previousNearbyDevicesRef = useRef<Device[]>([]);
+  const songLoopIntervalRef = useRef<number | null>(null);
 
   const refreshMappings = useCallback(() => {
     setRefreshFlag((prev) => prev + 1);
@@ -60,103 +67,210 @@ export const BluetoothSongMappingProvider: FC<{
     loadMappings();
   }, [loadMappings, refreshFlag]);
 
-  const playSongForPairedDevice = useCallback(async (deviceId: string) => {
-    try {
-      const mapping = await getMappingByID(deviceId);
+  const requestPermissions = useCallback(async () => {
+    if (Platform.OS === "android") {
+      const granted = await Promise.all([
+        PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN
+        ),
+        PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
+        ),
+        PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        ),
+      ]).then((results) =>
+        results.every((result) => result === PermissionsAndroid.RESULTS.GRANTED)
+      );
 
-      if (mapping) {
-        await playSound(
-          mapping.songUri,
-          deviceId,
-          AUDIO_SOURCE_TYPES.BLUETOOTH,
-          { forceReplay: true }
-        );
-      } else {
-        await stopSound();
-      }
-    } catch (error) {
-      console.error("Error playing song for paired device:", error);
-      await stopSound();
+      return granted;
     }
+    return true;
   }, []);
 
-  const getPairedDevices = useCallback(async () => {
+  const scanForNearbyDevices = useCallback(async () => {
     try {
-      if (Platform.OS === "android") {
-        await PermissionsAndroid.requestMultiple([
-          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        ]);
+      const hasPermissions = await requestPermissions();
+      if (!hasPermissions) {
+        return [];
       }
 
-      const enabled = await RNBluetoothClassic.isBluetoothEnabled();
-      if (!enabled) {
-        setCurrentPairedDevice(null);
-        return null;
+      const bluetoothState = await bleManager.state();
+      if (bluetoothState !== "PoweredOn") {
+        setNearbyDevices([]);
+        return [];
       }
 
-      const pairedDevices = await RNBluetoothClassic.getBondedDevices();
+      const foundDevices = new Map<string, Device>();
 
-      if (pairedDevices.length > 0) {
-        const connectedDevices = [];
-        for (const device of pairedDevices) {
-          try {
-            const isConnected = await RNBluetoothClassic.isDeviceConnected(
-              device.address
-            );
-            if (isConnected) {
-              connectedDevices.push(device);
+      return new Promise<Device[]>((resolve) => {
+        bleManager.startDeviceScan(
+          null,
+          { allowDuplicates: false },
+          (error, device) => {
+            if (error) {
+              console.error("BLE Scan error:", error);
+              return;
             }
-          } catch (error) {
-            console.log(
-              `Could not check connection status for ${device.address}:`,
-              error
-            );
+
+            if (device && device.rssi && device.rssi > -70) {
+              foundDevices.set(device.id, device);
+
+              const sortedDevices = Array.from(foundDevices.values())
+                .filter((d) => d.rssi && d.rssi > -70)
+                .sort((a, b) => (b.rssi || -100) - (a.rssi || -100));
+
+              setNearbyDevices(sortedDevices);
+            }
           }
-        }
+        );
 
-        if (connectedDevices.length > 0) {
-          const latestDevice = connectedDevices[0];
-          const deviceChanged =
-            previousDeviceRef.current !== latestDevice.address;
+        setTimeout(() => {
+          bleManager.stopDeviceScan();
 
-          setCurrentPairedDevice({
-            id: latestDevice.address,
-            name: latestDevice.name || latestDevice.address,
-          });
+          const finalDevices = Array.from(foundDevices.values())
+            .filter((device) => device.rssi && device.rssi > -70)
+            .sort((a, b) => (b.rssi || -100) - (a.rssi || -100));
 
-          if (deviceChanged) {
-            previousDeviceRef.current = latestDevice.address;
-            await playSongForPairedDevice(latestDevice.address);
-          }
-
-          return {
-            id: latestDevice.address,
-            name: latestDevice.name || latestDevice.address,
-          };
-        } else {
-          // No connected devices, stop music if previously playing
-          if (previousDeviceRef.current !== null) {
-            previousDeviceRef.current = null;
-            setCurrentPairedDevice(null);
-            await stopSound();
-          }
-          return null;
-        }
-      } else {
-        if (previousDeviceRef.current !== null) {
-          previousDeviceRef.current = null;
-          setCurrentPairedDevice(null);
-          await stopSound();
-        }
-        return null;
-      }
+          setNearbyDevices(finalDevices);
+          resolve(finalDevices);
+        }, 10000);
+      });
     } catch (error) {
-      console.error("Error getting paired devices:", error);
-      setCurrentPairedDevice(null);
-      return null;
+      console.error("Error scanning for nearby devices:", error);
+      return [];
     }
-  }, [playSongForPairedDevice]);
+  }, [requestPermissions]);
+
+  const checkForMappedDevices = useCallback(
+    async (devices: Device[]) => {
+      try {
+        for (const device of devices) {
+          const mapping = await getMappingByID(device.id);
+          if (mapping && device.id !== previousDeviceRef.current) {
+            previousDeviceRef.current = device.id;
+            setCurrentPairedDevice({
+              id: device.id,
+              name: device.name || "Unknown Device",
+            });
+
+            const startContinuousPlayback = async () => {
+              await playSound(
+                mapping.songUri,
+                device.id,
+                AUDIO_SOURCE_TYPES.BLUETOOTH,
+                { forceReplay: false }
+              );
+            };
+
+            await startContinuousPlayback();
+
+            songLoopIntervalRef.current = setInterval(async () => {
+              try {
+                const currentDeviceIds = nearbyDevices.map((d) => d.id);
+                if (currentDeviceIds.includes(device.id)) {
+                  await startContinuousPlayback();
+                }
+              } catch (error) {
+                console.error("Error in song loop:", error);
+              }
+            }, 180000);
+
+            break;
+          }
+        }
+      } catch (error) {
+        console.error("Error checking for mapped devices:", error);
+      }
+    },
+    [nearbyDevices]
+  );
+
+  const checkForDisconnectedDevices = useCallback(
+    async (currentDevices: Device[]) => {
+      try {
+        const currentDeviceIds = new Set(
+          currentDevices.map((device) => device.id)
+        );
+
+        if (
+          currentPairedDevice &&
+          !currentDeviceIds.has(currentPairedDevice.id)
+        ) {
+          await stopSound();
+          if (songLoopIntervalRef.current) {
+            clearInterval(songLoopIntervalRef.current);
+            songLoopIntervalRef.current = null;
+          }
+
+          setCurrentPairedDevice(null);
+          previousDeviceRef.current = null;
+        }
+
+        previousNearbyDevicesRef.current = currentDevices;
+      } catch (error) {
+        console.error("Error checking for disconnected devices:", error);
+      }
+    },
+    [currentPairedDevice]
+  );
+
+  useEffect(() => {
+    const handleDeviceChanges = async () => {
+      await checkForDisconnectedDevices(nearbyDevices);
+      await checkForMappedDevices(nearbyDevices);
+    };
+
+    handleDeviceChanges();
+  }, [nearbyDevices, checkForMappedDevices, checkForDisconnectedDevices]);
+
+  const startContinuousScanning = useCallback(() => {
+    if (isScanning) return;
+
+    setIsScanning(true);
+
+    const performScan = async () => {
+      try {
+        const devices = await scanForNearbyDevices();
+        await checkForMappedDevices(devices);
+      } catch (error) {
+        console.error("Error in continuous scanning:", error);
+      }
+    };
+
+    performScan();
+
+    scanIntervalRef.current = setInterval(performScan, 25000);
+  }, [isScanning, scanForNearbyDevices, checkForMappedDevices]);
+
+  const stopContinuousScanning = useCallback(() => {
+    setIsScanning(false);
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    if (songLoopIntervalRef.current) {
+      clearInterval(songLoopIntervalRef.current);
+      songLoopIntervalRef.current = null;
+    }
+    bleManager.stopDeviceScan();
+  }, []);
+
+  const startScanningRef = useRef(startContinuousScanning);
+  const stopScanningRef = useRef(stopContinuousScanning);
+
+  useEffect(() => {
+    startScanningRef.current = startContinuousScanning;
+    stopScanningRef.current = stopContinuousScanning;
+  }, [startContinuousScanning, stopContinuousScanning]);
+
+  useEffect(() => {
+    startScanningRef.current();
+
+    return () => {
+      stopScanningRef.current();
+    };
+  }, []);
 
   const saveMapping = useCallback(
     async (
@@ -184,6 +298,11 @@ export const BluetoothSongMappingProvider: FC<{
       try {
         if (currentPairedDevice?.id === address) {
           await stopSound();
+
+          if (songLoopIntervalRef.current) {
+            clearInterval(songLoopIntervalRef.current);
+            songLoopIntervalRef.current = null;
+          }
         }
 
         const result = await deleteMappingBTUtil(address);
@@ -218,32 +337,6 @@ export const BluetoothSongMappingProvider: FC<{
     }
   }, []);
 
-  useEffect(() => {
-    let intervalId: ReturnType<typeof setInterval>;
-    let initialCheckTimeout: ReturnType<typeof setTimeout>;
-
-    const setupBluetoothMonitoring = async () => {
-      initialCheckTimeout = setTimeout(async () => {
-        await getPairedDevices();
-      }, 1000);
-
-      intervalId = setInterval(async () => {
-        try {
-          await getPairedDevices();
-        } catch (error) {
-          console.error("Error in Bluetooth check interval:", error);
-        }
-      }, 5000);
-    };
-
-    setupBluetoothMonitoring();
-
-    return () => {
-      clearTimeout(initialCheckTimeout);
-      clearInterval(intervalId);
-    };
-  }, [getPairedDevices]);
-
   const contextValue: BluetoothSongMappingContextType = {
     mappings,
     saveMapping,
@@ -251,6 +344,12 @@ export const BluetoothSongMappingProvider: FC<{
     testMapping,
     loadMappings,
     refreshMappings,
+    nearbyDevices,
+    scanForNearbyDevices,
+    startContinuousScanning,
+    stopContinuousScanning,
+    isScanning,
+    currentPairedDevice,
   };
 
   return (

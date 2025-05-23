@@ -1,3 +1,5 @@
+import { Device } from "react-native-ble-plx";
+
 export interface BluetoothSongMapping {
   id: string;
   name: string;
@@ -25,4 +27,10 @@ export interface BluetoothSongMappingContextType {
   testMapping: (address: string) => Promise<boolean>;
   loadMappings: () => Promise<BluetoothSongMapping[]>;
   refreshMappings: () => void;
+  nearbyDevices: Device[];
+  scanForNearbyDevices: () => Promise<Device[]>;
+  startContinuousScanning: () => void;
+  stopContinuousScanning: () => void;
+  isScanning: boolean;
+  currentPairedDevice: { id: string; name: string } | null;
 }
