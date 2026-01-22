@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { PermissionsAndroid, Platform } from "react-native";
+import { Permission, PermissionsAndroid, Platform } from "react-native";
 import WifiManager from "react-native-wifi-reborn";
 import {
   WiFiSongMappingContextType as SongMappingContextType,
@@ -72,18 +72,44 @@ export const WiFiSongMappingProvider: FC<{
     loadMappings();
   }, [loadMappings, refreshFlag]);
 
+  const ensureWifiPermissions = useCallback(async () => {
+    if (Platform.OS !== "android") return true;
+
+    const permissions: (Permission | undefined)[] = [
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+      Platform.Version >= 33
+        ? PermissionsAndroid.PERMISSIONS.NEARBY_WIFI_DEVICES
+        : undefined,
+    ];
+
+    const toRequest = permissions.filter(Boolean) as Permission[];
+    if (!toRequest.length) return true;
+
+    const result = await PermissionsAndroid.requestMultiple(toRequest);
+    const granted = toRequest.every(
+      (perm) => result[perm] === PermissionsAndroid.RESULTS.GRANTED,
+    );
+
+    return granted;
+  }, []);
+
   const getCurrentWifi = useCallback(async () => {
     if (Platform.OS === "android") {
-      await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-      );
+      const hasPerms = await ensureWifiPermissions();
+      if (!hasPerms) {
+        await stopSound();
+        previousWifiRef.current = { ssid: null, bssid: null };
+        setCurrentWifi({ ssid: "", bssid: null });
+        return { ssid: "", bssid: null };
+      }
     }
 
     try {
       const ssid = await WifiManager.getCurrentWifiSSID();
       let bssid = null;
 
-      if (!ssid || ssid === "") {
+      if (!ssid || ssid === "" || ssid.toLowerCase() === "<unknown ssid>") {
         await stopSound();
         previousWifiRef.current = { ssid: null, bssid: null };
         setCurrentWifi({ ssid: "", bssid: null });
@@ -93,7 +119,7 @@ export const WiFiSongMappingProvider: FC<{
       try {
         const networks = await WifiManager.loadWifiList();
         const currentNetwork = networks.find(
-          (network) => network.SSID === ssid
+          (network) => network.SSID === ssid,
         );
         bssid = currentNetwork?.BSSID || null;
       } catch (error) {
@@ -119,7 +145,7 @@ export const WiFiSongMappingProvider: FC<{
       setCurrentWifi({ ssid: "", bssid: null });
       return { ssid: "", bssid: null };
     }
-  }, []);
+  }, [ensureWifiPermissions]);
 
   const saveMapping = useCallback(
     async (bssid: string, ssid: string, songUri: string, songName: string) => {
@@ -129,7 +155,7 @@ export const WiFiSongMappingProvider: FC<{
       }
       return result;
     },
-    [refreshMappings]
+    [refreshMappings],
   );
 
   const deleteMapping = useCallback(
@@ -146,7 +172,7 @@ export const WiFiSongMappingProvider: FC<{
 
       return result;
     },
-    [currentWifi, refreshMappings]
+    [currentWifi, refreshMappings],
   );
 
   const playSongForCurrentWifiImmediate = async (wifiInfo: {
@@ -226,7 +252,7 @@ export const WiFiSongMappingProvider: FC<{
             AUDIO_SOURCE_TYPES.WIFI,
             {
               forceReplay: forcePlay,
-            }
+            },
           );
         } else {
           if (!hasBluetoothPriority()) {
@@ -240,7 +266,7 @@ export const WiFiSongMappingProvider: FC<{
         }
       }
     },
-    [getCurrentWifi, loadMappings]
+    [getCurrentWifi, loadMappings],
   );
 
   useEffect(() => {
@@ -250,7 +276,7 @@ export const WiFiSongMappingProvider: FC<{
     const setupWifiMonitoring = async () => {
       if (Platform.OS === "android") {
         await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         );
       }
 
@@ -298,7 +324,7 @@ export const useWifiSongMapping = (): SongMappingContextType => {
   const context = useContext(WiFiSongMappingContext);
   if (context === undefined) {
     throw new Error(
-      "useWifiSongMapping must be used within a WiFiSongMappingProvider"
+      "useWifiSongMapping must be used within a WiFiSongMappingProvider",
     );
   }
   return context;

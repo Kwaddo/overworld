@@ -88,6 +88,36 @@ const InfoScreen = () => {
         </View>
 
         <View style={styles.section}>
+          <DSText style={styles.sectionTitle}>📍 Location Access</DSText>
+          <DSText style={styles.description}>
+            Location is required on Android to read the current WiFi network and
+            to scan for Bluetooth devices.
+          </DSText>
+
+          <View style={styles.stepContainer}>
+            <DSText style={styles.stepNumber}>1.</DSText>
+            <DSText style={styles.stepText}>
+              Open your device Settings and turn on Location Services
+            </DSText>
+          </View>
+
+          <View style={styles.stepContainer}>
+            <DSText style={styles.stepNumber}>2.</DSText>
+            <DSText style={styles.stepText}>
+              When prompted in-app, grant location permission (Allow While Using
+              the App)
+            </DSText>
+          </View>
+
+          <View style={styles.stepContainer}>
+            <DSText style={styles.stepNumber}>3.</DSText>
+            <DSText style={styles.stepText}>
+              If WiFi/BT detection fails, confirm Location is still enabled
+            </DSText>
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <DSText style={styles.sectionTitle}>💡 Tips</DSText>
 
           <View style={styles.tipContainer}>

@@ -44,9 +44,11 @@ export const BluetoothSongMappingProvider: FC<{
   const [nearbyDevices, setNearbyDevices] = useState<Device[]>([]);
   const previousDeviceRef = useRef<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
-  const scanIntervalRef = useRef<number | null>(null);
+  const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const previousNearbyDevicesRef = useRef<Device[]>([]);
-  const songLoopIntervalRef = useRef<number | null>(null);
+  const songLoopIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
 
   const refreshMappings = useCallback(() => {
     setRefreshFlag((prev) => prev + 1);
@@ -71,16 +73,18 @@ export const BluetoothSongMappingProvider: FC<{
     if (Platform.OS === "android") {
       const granted = await Promise.all([
         PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
         ),
         PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
         ),
         PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         ),
       ]).then((results) =>
-        results.every((result) => result === PermissionsAndroid.RESULTS.GRANTED)
+        results.every(
+          (result) => result === PermissionsAndroid.RESULTS.GRANTED,
+        ),
       );
 
       return granted;
@@ -122,7 +126,7 @@ export const BluetoothSongMappingProvider: FC<{
 
               setNearbyDevices(sortedDevices);
             }
-          }
+          },
         );
 
         setTimeout(() => {
@@ -159,7 +163,7 @@ export const BluetoothSongMappingProvider: FC<{
                 mapping.songUri,
                 device.id,
                 AUDIO_SOURCE_TYPES.BLUETOOTH,
-                { forceReplay: false }
+                { forceReplay: false },
               );
             };
 
@@ -183,14 +187,14 @@ export const BluetoothSongMappingProvider: FC<{
         console.error("Error checking for mapped devices:", error);
       }
     },
-    [nearbyDevices]
+    [nearbyDevices],
   );
 
   const checkForDisconnectedDevices = useCallback(
     async (currentDevices: Device[]) => {
       try {
         const currentDeviceIds = new Set(
-          currentDevices.map((device) => device.id)
+          currentDevices.map((device) => device.id),
         );
 
         if (
@@ -212,7 +216,7 @@ export const BluetoothSongMappingProvider: FC<{
         console.error("Error checking for disconnected devices:", error);
       }
     },
-    [currentPairedDevice]
+    [currentPairedDevice],
   );
 
   useEffect(() => {
@@ -277,20 +281,20 @@ export const BluetoothSongMappingProvider: FC<{
       address: string,
       deviceName: string,
       songUri: string,
-      songName: string
+      songName: string,
     ) => {
       const result = await saveMappingBTUtil(
         address,
         deviceName,
         songUri,
-        songName
+        songName,
       );
       if (result) {
         refreshMappings();
       }
       return result;
     },
-    [refreshMappings]
+    [refreshMappings],
   );
 
   const deleteMapping = useCallback(
@@ -315,7 +319,7 @@ export const BluetoothSongMappingProvider: FC<{
         return false;
       }
     },
-    [currentPairedDevice, refreshMappings]
+    [currentPairedDevice, refreshMappings],
   );
 
   const testMapping = useCallback(async (address: string) => {
@@ -326,7 +330,7 @@ export const BluetoothSongMappingProvider: FC<{
           mapping.songUri,
           address,
           AUDIO_SOURCE_TYPES.BLUETOOTH,
-          { forceReplay: true }
+          { forceReplay: true },
         );
         return true;
       }
@@ -363,7 +367,7 @@ export const useBluetoothSongMapping = (): BluetoothSongMappingContextType => {
   const context = useContext(BluetoothSongMappingContext);
   if (context === undefined) {
     throw new Error(
-      "useBluetoothSongMapping must be used within a BluetoothSongMappingProvider"
+      "useBluetoothSongMapping must be used within a BluetoothSongMappingProvider",
     );
   }
   return context;
