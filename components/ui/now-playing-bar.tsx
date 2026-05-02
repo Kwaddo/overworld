@@ -25,7 +25,7 @@ export const NowPlayingBar = () => {
   const title = networkName ? `${networkName} - ${displayName}` : displayName;
 
   return (
-    <View style={[styles.bar, { paddingTop: insets.top + 10 }]}>
+    <View style={[styles.bar, { paddingTop: insets.top + 4 }]}>
       <DSText style={styles.note}>♪</DSText>
       <DSText style={styles.title} numberOfLines={1}>
         {title}
@@ -43,25 +43,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingBottom: 6,
     borderBottomWidth: 2,
     borderBottomColor: LightColors.primary,
     gap: 8,
   },
   note: {
-    fontSize: 18,
+    fontSize: 14,
     color: LightColors.primary,
   },
   title: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 13,
     color: LightColors.textPrimary,
   },
   stopBtn: {
-    padding: 4,
+    padding: 2,
   },
   stopText: {
-    fontSize: 16,
+    fontSize: 13,
     color: LightColors.secondary,
   },
 });

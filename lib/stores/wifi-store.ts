@@ -167,10 +167,13 @@ export const useWifiStore = create<WiFiState & WiFiActions>((set, get) => ({
 
       return { ssid, bssid };
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      // "Not connected or connecting." = no WiFi, not a location issue
+      const isDisconnected = /not connected/i.test(msg);
       logger.error('WiFiStore', 'Error getting current WiFi', error);
-      await stopSound();
+      if (!hasBluetoothPriority()) await stopSound();
       previousWifi = { ssid: null, bssid: null };
-      set({ currentWifi: { ssid: '', bssid: null }, locationBlocked: true });
+      set({ currentWifi: { ssid: '', bssid: null }, locationBlocked: !isDisconnected });
       return { ssid: '', bssid: null };
     }
   },

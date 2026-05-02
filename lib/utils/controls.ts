@@ -5,16 +5,16 @@ import { dismissNowPlayingNotification, showNowPlayingNotification } from './not
 
 const audioPlayer = createAudioPlayer();
 
-// On iOS, re-activate the audio session when the app returns to foreground after an interruption
-if (Platform.OS === 'ios') {
-  AppState.addEventListener('change', (state) => {
-    if (state === 'active' && currentlyPlaying.isPlaying) {
-      setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true }).catch((e) =>
-        logger.warn('AudioControls', 'Failed to re-activate audio session', e),
-      );
-    }
-  });
-}
+AppState.addEventListener('change', (state) => {
+  if (Platform.OS === 'ios' && state === 'active' && currentlyPlaying.isPlaying) {
+    setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true }).catch((e) =>
+      logger.warn('AudioControls', 'Failed to re-activate audio session', e),
+    );
+  }
+  if ((state === 'background' || state === 'inactive') && !currentlyPlaying.isPlaying) {
+    dismissNowPlayingNotification();
+  }
+});
 
 export const AUDIO_SOURCE_TYPES = {
   WIFI: 0,
@@ -150,6 +150,9 @@ export const playSound = async (
     currentStatusListener = (status: AudioStatus) => {
       if (status.didJustFinish) {
         currentlyPlaying.isPlaying = false;
+        currentlyPlaying.songName = null;
+        currentlyPlaying.networkName = null;
+        dismissNowPlayingNotification();
 
         if (currentStatusListener) {
           audioPlayer.removeListener('playbackStatusUpdate', currentStatusListener);

@@ -1,8 +1,15 @@
 import NetInfo from '@react-native-community/netinfo';
 import { useEffect } from 'react';
-import { PermissionsAndroid, Platform } from 'react-native';
+import { AppState, PermissionsAndroid, Platform } from 'react-native';
 import { useBtStore } from '../stores/bt-store';
 import { useWifiStore } from '../stores/wifi-store';
+import { registerBackgroundWifiTask } from '../tasks/background-wifi';
+import {
+  AUDIO_SOURCE_TYPES,
+  getCurrentlyPlaying,
+  hasBluetoothPriority,
+  stopSound,
+} from '../utils/controls';
 import { logger } from '../utils/logger';
 import { requestNotificationPermission } from '../utils/notifications';
 
@@ -16,11 +23,12 @@ export const useInitStores = () => {
   const checkForDisconnectedDevices = useBtStore((s) => s.checkForDisconnectedDevices);
   const nearbyDevices = useBtStore((s) => s.nearbyDevices);
 
-  // Load initial data + request notification permission
+  // Load initial data + request notification permission + register background task
   useEffect(() => {
     loadWifiMappings();
     loadBtMappings();
     requestNotificationPermission();
+    registerBackgroundWifiTask();
   }, [loadWifiMappings, loadBtMappings]);
 
   // WiFi: netinfo event-driven + 7s polling fallback
@@ -33,11 +41,31 @@ export const useInitStores = () => {
       // Play on first load
       const timeout = setTimeout(() => playSongForCurrentWifi(true), 1000);
 
-      // Event-driven: trigger immediately on network change
+      // Event-driven: react immediately to network changes.
+      // We split the two cases so disconnection uses a direct stopSound() call rather than
+      // going through getCurrentWifiSSID(), which can return stale data right at the moment
+      // of disconnect and miss the stop entirely.
       const unsubscribe = NetInfo.addEventListener((state) => {
-        if (state.type === 'wifi') {
+        if (state.type === 'wifi' && state.isConnected) {
           playSongForCurrentWifi().catch((e) =>
-            logger.error('InitStores', 'NetInfo wifi handler error', e),
+            logger.error('InitStores', 'NetInfo connect handler error', e),
+          );
+        } else if (state.type !== 'wifi') {
+          const { isPlaying, type } = getCurrentlyPlaying();
+          if (isPlaying && type === AUDIO_SOURCE_TYPES.WIFI && !hasBluetoothPriority()) {
+            stopSound().catch((e) =>
+              logger.error('InitStores', 'NetInfo disconnect handler error', e),
+            );
+          }
+        }
+      });
+
+      // When the app returns to the foreground, re-verify WiFi state in case the OS
+      // suspended the JS thread while we were disconnected.
+      const appStateSub = AppState.addEventListener('change', (appState) => {
+        if (appState === 'active') {
+          playSongForCurrentWifi().catch((e) =>
+            logger.error('InitStores', 'AppState active handler error', e),
           );
         }
       });
@@ -50,6 +78,7 @@ export const useInitStores = () => {
       return () => {
         clearTimeout(timeout);
         unsubscribe();
+        appStateSub.remove();
         clearInterval(interval);
       };
     };
