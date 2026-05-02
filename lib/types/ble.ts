@@ -1,10 +1,11 @@
-import { Device } from "react-native-ble-plx";
+import type { Device } from 'react-native-ble-plx';
 
 export interface BluetoothSongMapping {
   id: string;
   name: string;
   songUri: string;
   songName: string;
+  volume: number;
 }
 
 export type BluetoothSongMap = {
@@ -12,6 +13,7 @@ export type BluetoothSongMap = {
     name: string;
     songUri: string;
     songName: string;
+    volume?: number;
   };
 };
 
@@ -21,7 +23,7 @@ export interface BluetoothSongMappingContextType {
     address: string,
     deviceName: string,
     songUri: string,
-    songName: string
+    songName: string,
   ) => Promise<boolean>;
   deleteMapping: (address: string) => Promise<boolean>;
   testMapping: (address: string) => Promise<boolean>;

@@ -1,85 +1,115 @@
-import { LightColors } from "@/constants/Colors";
-import { useWifiSongMapping } from "@/contexts/wifisongmaps.provider";
-import { WifiSongMapping } from "@/lib/types/wifi";
-import { FC } from "react";
-import {
-  Alert,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import DSText from "../ui/ds-text";
+import { type FC, useMemo, useState } from 'react';
+import { Alert, FlatList, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LightColors } from '@/constants/Colors';
+import { useWifiStore } from '@/lib/stores/wifi-store';
+import type { WifiSongMapping } from '@/lib/types/wifi';
+import { parseSongTitle } from '@/lib/utils/songTitle';
+import DSText from '../ui/ds-text';
 
 interface WifiListProps {
   mappings: WifiSongMapping[];
 }
 
-const WifiList: FC<WifiListProps> = ({ mappings }) => {
-  const { testMapping, deleteMapping, refreshMappings } = useWifiSongMapping();
+const VOLUME_STEP = 0.1;
 
-  const handleTestMapping = async (item: WifiSongMapping) => {
-    Alert.alert("Test Song", `Play the song "${item.songName}"?`, [
-      { text: "Cancel" },
-      {
-        text: "Play",
-        onPress: async () => {
-          await testMapping(item.bssid);
-        },
-      },
+const WifiList: FC<WifiListProps> = ({ mappings }) => {
+  const testMapping = useWifiStore((s) => s.testMapping);
+  const deleteMapping = useWifiStore((s) => s.deleteMapping);
+  const updateVolume = useWifiStore((s) => s.updateVolume);
+  const [query, setQuery] = useState('');
+
+  const filtered = useMemo(() => {
+    if (!query.trim()) return mappings;
+    const q = query.toLowerCase();
+    return mappings.filter(
+      (m) => m.wifiName.toLowerCase().includes(q) || m.songName.toLowerCase().includes(q),
+    );
+  }, [mappings, query]);
+
+  const handleDelete = async (item: WifiSongMapping) => {
+    Alert.alert('Delete Mapping', `Remove the song for "${item.wifiName}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteMapping(item.bssid) },
     ]);
   };
 
-  const confirmDelete = async (item: WifiSongMapping) => {
-    Alert.alert(
-      "Delete Mapping",
-      `Are you sure you want to remove the song for "${item.wifiName}"?`,
-      [
-        { text: "Cancel" },
-        {
-          text: "Delete",
-          onPress: async () => {
-            const success = await deleteMapping(item.bssid);
-            if (success) {
-              refreshMappings();
-            }
-          },
-          style: "destructive",
-        },
-      ]
-    );
+  const handleVolumeChange = (item: WifiSongMapping, delta: number) => {
+    const next = Math.min(1, Math.max(0, Math.round((item.volume + delta) * 10) / 10));
+    if (next !== item.volume) updateVolume(item.bssid, next);
   };
+
+  const renderRightActions = (item: WifiSongMapping) => (
+    <TouchableOpacity style={styles.swipeDelete} onPress={() => handleDelete(item)}>
+      <DSText style={styles.swipeDeleteText}>Delete</DSText>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <DSText style={styles.title}>Current Mappings</DSText>
+      <TextInput
+        style={styles.search}
+        placeholder="Search networks or songs..."
+        placeholderTextColor={LightColors.textSecondary}
+        value={query}
+        onChangeText={setQuery}
+        clearButtonMode="while-editing"
+      />
       <FlatList
-        data={mappings}
+        data={filtered}
         keyExtractor={(item) => item.bssid}
-        extraData={mappings}
+        extraData={filtered}
         renderItem={({ item }) => (
-          <View style={styles.mappingItem}>
-            <DSText style={styles.networkName}>{item.wifiName}</DSText>
-            <DSText style={styles.songName}>{item.songName}</DSText>
-            <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.playButton]}
-                onPress={() => handleTestMapping(item)}
-              >
-                <DSText style={styles.actionButtonText}>Test</DSText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.deleteButton]}
-                onPress={() => confirmDelete(item)}
-              >
-                <DSText style={styles.actionButtonText}>Delete</DSText>
-              </TouchableOpacity>
+          <ReanimatedSwipeable renderRightActions={() => renderRightActions(item)}>
+            <View style={styles.mappingItem}>
+              <DSText style={styles.networkName}>{item.wifiName}</DSText>
+              <DSText style={styles.songName}>{parseSongTitle(item.songName)}</DSText>
+              <View style={styles.volumeRow}>
+                <DSText style={styles.volumeLabel}>Vol</DSText>
+                <TouchableOpacity
+                  style={styles.volumeBtn}
+                  onPress={() => handleVolumeChange(item, -VOLUME_STEP)}
+                  disabled={item.volume <= 0}
+                >
+                  <DSText style={styles.volumeBtnText}>−</DSText>
+                </TouchableOpacity>
+                <DSText style={styles.volumeValue}>{Math.round(item.volume * 100)}%</DSText>
+                <TouchableOpacity
+                  style={styles.volumeBtn}
+                  onPress={() => handleVolumeChange(item, VOLUME_STEP)}
+                  disabled={item.volume >= 1}
+                >
+                  <DSText style={styles.volumeBtnText}>+</DSText>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.playButton]}
+                  onPress={() =>
+                    Alert.alert('Test Song', `Play "${parseSongTitle(item.songName)}"?`, [
+                      { text: 'Cancel' },
+                      { text: 'Play', onPress: () => testMapping(item.bssid) },
+                    ])
+                  }
+                >
+                  <DSText style={styles.actionButtonText}>Test</DSText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.deleteButton]}
+                  onPress={() => handleDelete(item)}
+                >
+                  <DSText style={styles.actionButtonText}>Delete</DSText>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </ReanimatedSwipeable>
         )}
         ListEmptyComponent={
-          <DSText style={styles.emptyText}>No mappings created yet</DSText>
+          <DSText style={styles.emptyText}>
+            {query ? 'No matches found' : 'No mappings created yet'}
+          </DSText>
         }
       />
     </SafeAreaView>
@@ -89,10 +119,20 @@ const WifiList: FC<WifiListProps> = ({ mappings }) => {
 const styles = StyleSheet.create({
   title: {
     fontSize: 32,
-    alignSelf: "center",
+    alignSelf: 'center',
     color: LightColors.textPrimary,
     marginTop: 24,
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  search: {
+    backgroundColor: LightColors.cardBackground,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+    fontSize: 16,
+    color: LightColors.textPrimary,
+    fontFamily: 'NintendoDSBIOS',
   },
   mappingItem: {
     backgroundColor: LightColors.cardBackground,
@@ -108,11 +148,41 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: LightColors.textSecondary,
     marginTop: 4,
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  volumeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    gap: 8,
+  },
+  volumeLabel: {
+    fontSize: 14,
+    color: LightColors.textSecondary,
+    width: 24,
+  },
+  volumeBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: LightColors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  volumeBtnText: {
+    color: LightColors.textLight,
+    fontSize: 18,
+    lineHeight: 22,
+  },
+  volumeValue: {
+    fontSize: 14,
+    color: LightColors.textPrimary,
+    minWidth: 40,
+    textAlign: 'center',
   },
   actionButtons: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
   actionButton: {
     borderRadius: 6,
@@ -128,11 +198,23 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     color: LightColors.textLight,
-    fontWeight: "600",
+    fontWeight: '600',
+  },
+  swipeDelete: {
+    backgroundColor: LightColors.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  swipeDeleteText: {
+    color: '#fff',
+    fontWeight: '600',
   },
   emptyText: {
     color: LightColors.textSecondary,
-    textAlign: "center",
+    textAlign: 'center',
     marginTop: 32,
     fontSize: 16,
   },

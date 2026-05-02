@@ -1,6 +1,20 @@
-import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
+import { type AudioStatus, createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import { AppState, Platform } from 'react-native';
+import { logger } from './logger';
+import { dismissNowPlayingNotification, showNowPlayingNotification } from './notifications';
 
 const audioPlayer = createAudioPlayer();
+
+// On iOS, re-activate the audio session when the app returns to foreground after an interruption
+if (Platform.OS === 'ios') {
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active' && currentlyPlaying.isPlaying) {
+      setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true }).catch((e) =>
+        logger.warn('AudioControls', 'Failed to re-activate audio session', e),
+      );
+    }
+  });
+}
 
 export const AUDIO_SOURCE_TYPES = {
   WIFI: 0,
@@ -14,23 +28,42 @@ let currentlyPlaying = {
   lastPlayedAt: 0,
 };
 
-let currentStatusListener: ((status: any) => void) | null = null;
+let currentStatusListener: ((status: AudioStatus) => void) | null = null;
 
-/**
- * Stops any currently playing sound
- */
+const FADE_DURATION_MS = 600;
+const FADE_STEPS = 12;
+
+const fadeOut = async (): Promise<void> => {
+  const stepDelay = FADE_DURATION_MS / FADE_STEPS;
+  for (let i = FADE_STEPS - 1; i >= 0; i--) {
+    audioPlayer.volume = i / FADE_STEPS;
+    await new Promise<void>((r) => setTimeout(r, stepDelay));
+  }
+};
+
+const fadeIn = async (targetVolume = 1): Promise<void> => {
+  const stepDelay = FADE_DURATION_MS / FADE_STEPS;
+  for (let i = 1; i <= FADE_STEPS; i++) {
+    audioPlayer.volume = (i / FADE_STEPS) * targetVolume;
+    await new Promise<void>((r) => setTimeout(r, stepDelay));
+  }
+};
+
 export const stopSound = async (): Promise<void> => {
   try {
     if (currentStatusListener) {
-      audioPlayer.removeListener("playbackStatusUpdate", currentStatusListener);
+      audioPlayer.removeListener('playbackStatusUpdate', currentStatusListener);
       currentStatusListener = null;
     }
 
+    if (currentlyPlaying.isPlaying) await fadeOut();
     await audioPlayer.pause();
     await audioPlayer.remove();
+    audioPlayer.volume = 1;
     currentlyPlaying.isPlaying = false;
+    dismissNowPlayingNotification();
   } catch (error) {
-    console.error("Error stopping sound:", error);
+    logger.error('AudioControls', 'Error stopping sound', error);
   }
 };
 
@@ -48,10 +81,12 @@ export const playSound = async (
   options: {
     forceReplay?: boolean;
     looping?: boolean;
-  } = {}
+    volume?: number;
+    notificationTitle?: string;
+  } = {},
 ): Promise<void> => {
   try {
-    const { forceReplay = false, looping = false } = options;
+    const { forceReplay = false, looping = false, volume = 1, notificationTitle } = options;
     const now = Date.now();
 
     if (!forceReplay && currentlyPlaying.isPlaying) {
@@ -74,12 +109,14 @@ export const playSound = async (
         shouldPlayInBackground: true,
       });
     } catch (audioModeError) {
-      console.error("Error setting audio mode:", audioModeError);
+      logger.warn('AudioControls', 'Error setting audio mode', audioModeError);
     }
 
+    audioPlayer.volume = 0;
     await audioPlayer.replace({ uri });
     audioPlayer.loop = looping;
     await audioPlayer.play();
+    fadeIn(volume);
 
     currentlyPlaying = {
       id,
@@ -88,34 +125,33 @@ export const playSound = async (
       type,
     };
 
-    if (currentStatusListener) {
-      audioPlayer.removeListener("playbackStatusUpdate", currentStatusListener);
+    if (notificationTitle) {
+      const source = type === AUDIO_SOURCE_TYPES.BLUETOOTH ? 'Bluetooth' : 'WiFi';
+      showNowPlayingNotification(notificationTitle, source);
     }
 
-    currentStatusListener = (status: any) => {
-      if (
-        status.didJustFinish === true ||
-        (status.isLoaded === false && status.error)
-      ) {
+    if (currentStatusListener) {
+      audioPlayer.removeListener('playbackStatusUpdate', currentStatusListener);
+    }
+
+    currentStatusListener = (status: AudioStatus) => {
+      if (status.didJustFinish) {
         currentlyPlaying.isPlaying = false;
 
         if (currentStatusListener) {
-          audioPlayer.removeListener(
-            "playbackStatusUpdate",
-            currentStatusListener
-          );
+          audioPlayer.removeListener('playbackStatusUpdate', currentStatusListener);
           currentStatusListener = null;
         }
       }
     };
 
-    audioPlayer.addListener("playbackStatusUpdate", currentStatusListener);
+    audioPlayer.addListener('playbackStatusUpdate', currentStatusListener);
   } catch (error) {
-    console.error("Error playing sound:", error);
+    logger.error('AudioControls', 'Error playing sound', error);
     currentlyPlaying.isPlaying = false;
 
     if (currentStatusListener) {
-      audioPlayer.removeListener("playbackStatusUpdate", currentStatusListener);
+      audioPlayer.removeListener('playbackStatusUpdate', currentStatusListener);
       currentStatusListener = null;
     }
     return;
@@ -143,8 +179,5 @@ export const getCurrentlyPlaying = () => {
  * Check if Bluetooth audio has priority over WiFi
  */
 export const hasBluetoothPriority = (): boolean => {
-  return (
-    currentlyPlaying.isPlaying &&
-    currentlyPlaying.type === AUDIO_SOURCE_TYPES.BLUETOOTH
-  );
+  return currentlyPlaying.isPlaying && currentlyPlaying.type === AUDIO_SOURCE_TYPES.BLUETOOTH;
 };

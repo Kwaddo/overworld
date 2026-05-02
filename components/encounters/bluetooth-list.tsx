@@ -1,192 +1,202 @@
-import { LightColors } from "@/constants/Colors";
-import { useBluetoothSongMapping } from "@/contexts/btsongmaps.provider";
-import { DocumentPickerAdapter } from "@/lib/hooks/useDocumentPicker";
-import { BluetoothSongMapping } from "@/lib/types/ble";
-import { FC } from "react";
-import {
-  Alert,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { Device } from "react-native-ble-plx";
-import DSText from "../ui/ds-text";
+import { type FC, useMemo, useState } from 'react';
+import { Alert, FlatList, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import type { Device } from 'react-native-ble-plx';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import { LightColors } from '@/constants/Colors';
+import { DocumentPickerAdapter } from '@/lib/hooks/useDocumentPicker';
+import { useBtStore } from '@/lib/stores/bt-store';
+import type { BluetoothSongMapping } from '@/lib/types/ble';
+import { logger } from '@/lib/utils/logger';
+import { parseSongTitle } from '@/lib/utils/songTitle';
+import DSText from '../ui/ds-text';
 
 interface BluetoothListProps {
   devices: Device[];
   mappings: BluetoothSongMapping[];
 }
 
-const BluetoothList: FC<BluetoothListProps> = ({ devices, mappings }) => {
-  const { testMapping, deleteMapping, saveMapping, refreshMappings } =
-    useBluetoothSongMapping();
+const VOLUME_STEP = 0.1;
 
-  const getMappingForDevice = (deviceId: string) => {
-    return mappings.find((mapping) => mapping.id === deviceId);
-  };
+const BluetoothList: FC<BluetoothListProps> = ({ devices, mappings }) => {
+  const testMapping = useBtStore((s) => s.testMapping);
+  const deleteMapping = useBtStore((s) => s.deleteMapping);
+  const saveMapping = useBtStore((s) => s.saveMapping);
+  const updateVolume = useBtStore((s) => s.updateVolume);
+  const [query, setQuery] = useState('');
+
+  const filtered = useMemo(() => {
+    if (!query.trim()) return devices;
+    const q = query.toLowerCase();
+    return devices.filter(
+      (d) => (d.name ?? '').toLowerCase().includes(q) || d.id.toLowerCase().includes(q),
+    );
+  }, [devices, query]);
+
+  const getMappingForDevice = (deviceId: string) => mappings.find((m) => m.id === deviceId);
 
   const handleAddMapping = async (device: Device) => {
     try {
       const file = await DocumentPickerAdapter.getDocument();
-
-      if (!file) {
-        Alert.alert("Error", "No file selected");
-        return;
-      }
-
-      const success = await saveMapping(
-        device.id,
-        device.name || device.id,
-        file.uri,
-        file.name
-      );
-
+      if (!file) return;
+      const success = await saveMapping(device.id, device.name ?? device.id, file.uri, file.name);
       if (success) {
         Alert.alert(
-          "Success",
-          `Successfully mapped "${device.name || device.id}" to "${file.name}"`
+          'Success',
+          `Mapped "${device.name ?? device.id}" to "${parseSongTitle(file.name)}"`,
         );
-        refreshMappings();
       } else {
-        Alert.alert("Error", "Failed to save mapping");
+        Alert.alert('Error', 'Failed to save mapping');
       }
     } catch (error) {
-      Alert.alert("Error", "Failed to add mapping");
-      console.error(error);
+      Alert.alert('Error', 'Failed to add mapping');
+      logger.error('BTList', 'Failed to add mapping', error);
     }
   };
 
-  const handleTestMapping = async (device: Device) => {
+  const handleDelete = async (device: Device) => {
     const mapping = getMappingForDevice(device.id);
     if (!mapping) return;
-
-    Alert.alert("Test Song", `Play the song "${mapping.songName}"?`, [
-      { text: "Cancel" },
-      {
-        text: "Play",
-        onPress: async () => {
-          await testMapping(device.id);
-        },
-      },
+    Alert.alert('Delete Mapping', `Remove the song for "${device.name ?? device.id}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteMapping(device.id) },
     ]);
   };
 
-  const confirmDelete = async (device: Device) => {
-    const mapping = getMappingForDevice(device.id);
-    if (!mapping) return;
+  const handleVolumeChange = (mapping: BluetoothSongMapping, delta: number) => {
+    const next = Math.min(1, Math.max(0, Math.round((mapping.volume + delta) * 10) / 10));
+    if (next !== mapping.volume) updateVolume(mapping.id, next);
+  };
 
-    Alert.alert(
-      "Delete Mapping",
-      `Are you sure you want to remove the song for "${
-        device.name || device.id
-      }"?`,
-      [
-        { text: "Cancel" },
-        {
-          text: "Delete",
-          onPress: async () => {
-            const success = await deleteMapping(device.id);
-            if (success) {
-              refreshMappings();
-            }
-          },
-          style: "destructive",
-        },
-      ]
+  const renderRightActions = (device: Device) => {
+    if (!getMappingForDevice(device.id)) return null;
+    return (
+      <TouchableOpacity style={styles.swipeDelete} onPress={() => handleDelete(device)}>
+        <DSText style={styles.swipeDeleteText}>Delete</DSText>
+      </TouchableOpacity>
     );
   };
 
   const renderDevice = ({ item: device }: { item: Device }) => {
     const mapping = getMappingForDevice(device.id);
-    const deviceName = device.name || device.id;
+    const deviceName = device.name ?? device.id;
 
     return (
-      <View style={styles.deviceItem}>
-        <View style={styles.deviceInfo}>
-          <DSText
-            style={styles.deviceName}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {deviceName}
-          </DSText>
-          <DSText
-            style={styles.deviceDetails}
-            numberOfLines={1}
-            ellipsizeMode="middle"
-          >
-            ID: {device.id}
-          </DSText>
-          <DSText
-            style={styles.deviceDetails}
-            numberOfLines={1}
-            ellipsizeMode="middle"
-          >
-            Signal: {device.rssi} dBm
-          </DSText>
-          {mapping && (
-            <DSText
-              style={styles.mappedSong}
-              numberOfLines={2}
-              ellipsizeMode="tail"
-            >
-              ♪ {mapping.songName}
+      <ReanimatedSwipeable renderRightActions={() => renderRightActions(device)}>
+        <View style={styles.deviceItem}>
+          <View style={styles.deviceInfo}>
+            <DSText style={styles.deviceName} numberOfLines={1} ellipsizeMode="tail">
+              {deviceName}
             </DSText>
-          )}
-        </View>
+            <DSText style={styles.deviceDetails} numberOfLines={1} ellipsizeMode="middle">
+              ID: {device.id}
+            </DSText>
+            <DSText style={styles.deviceDetails}>Signal: {device.rssi} dBm</DSText>
+            {mapping && (
+              <>
+                <DSText style={styles.mappedSong} numberOfLines={1} ellipsizeMode="tail">
+                  ♪ {parseSongTitle(mapping.songName)}
+                </DSText>
+                <View style={styles.volumeRow}>
+                  <DSText style={styles.volumeLabel}>Vol</DSText>
+                  <TouchableOpacity
+                    style={styles.volumeBtn}
+                    onPress={() => handleVolumeChange(mapping, -VOLUME_STEP)}
+                    disabled={mapping.volume <= 0}
+                  >
+                    <DSText style={styles.volumeBtnText}>−</DSText>
+                  </TouchableOpacity>
+                  <DSText style={styles.volumeValue}>{Math.round(mapping.volume * 100)}%</DSText>
+                  <TouchableOpacity
+                    style={styles.volumeBtn}
+                    onPress={() => handleVolumeChange(mapping, VOLUME_STEP)}
+                    disabled={mapping.volume >= 1}
+                  >
+                    <DSText style={styles.volumeBtnText}>+</DSText>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
 
-        <View style={styles.actionButtons}>
-          {mapping ? (
-            <>
+          <View style={styles.actionButtons}>
+            {mapping ? (
+              <>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.testButton]}
+                  onPress={() =>
+                    Alert.alert('Test Song', `Play "${parseSongTitle(mapping.songName)}"?`, [
+                      { text: 'Cancel' },
+                      { text: 'Play', onPress: () => testMapping(device.id) },
+                    ])
+                  }
+                >
+                  <DSText style={styles.actionButtonText}>Test</DSText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.deleteButton]}
+                  onPress={() => handleDelete(device)}
+                >
+                  <DSText style={styles.actionButtonText}>Delete</DSText>
+                </TouchableOpacity>
+              </>
+            ) : (
               <TouchableOpacity
-                style={[styles.actionButton, styles.testButton]}
-                onPress={() => handleTestMapping(device)}
+                style={[styles.actionButton, styles.addButton]}
+                onPress={() => handleAddMapping(device)}
               >
-                <DSText style={styles.actionButtonText}>Test</DSText>
+                <DSText style={styles.actionButtonText}>Add Song</DSText>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.deleteButton]}
-                onPress={() => confirmDelete(device)}
-              >
-                <DSText style={styles.actionButtonText}>Delete</DSText>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <TouchableOpacity
-              style={[styles.actionButton, styles.addButton]}
-              onPress={() => handleAddMapping(device)}
-            >
-              <DSText style={styles.actionButtonText}>Add Song</DSText>
-            </TouchableOpacity>
-          )}
+            )}
+          </View>
         </View>
-      </View>
+      </ReanimatedSwipeable>
     );
   };
 
   return (
-    <FlatList
-      data={devices}
-      keyExtractor={(item) => item.id}
-      renderItem={renderDevice}
-      extraData={mappings}
-      ListEmptyComponent={
-        <DSText style={styles.emptyText}>No nearby devices found.</DSText>
-      }
-    />
+    <View style={{ flex: 1 }}>
+      <TextInput
+        style={styles.search}
+        placeholder="Search devices..."
+        placeholderTextColor={LightColors.textSecondary}
+        value={query}
+        onChangeText={setQuery}
+        clearButtonMode="while-editing"
+      />
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        renderItem={renderDevice}
+        extraData={mappings}
+        ListEmptyComponent={
+          <DSText style={styles.emptyText}>
+            {query ? 'No matches found' : 'No nearby devices found.'}
+          </DSText>
+        }
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  search: {
+    backgroundColor: LightColors.cardBackground,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+    fontSize: 16,
+    color: LightColors.textPrimary,
+    fontFamily: 'NintendoDSBIOS',
+  },
   deviceItem: {
     backgroundColor: LightColors.cardBackground,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   deviceInfo: {
     flex: 1,
@@ -205,13 +215,44 @@ const styles = StyleSheet.create({
   mappedSong: {
     fontSize: 14,
     color: LightColors.textSecondary,
-    fontWeight: "600",
-    lineHeight: 18,
+    fontWeight: '600',
+    marginTop: 2,
+    marginBottom: 4,
+  },
+  volumeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 6,
+  },
+  volumeLabel: {
+    fontSize: 12,
+    color: LightColors.textSecondary,
+    width: 22,
+  },
+  volumeBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 5,
+    backgroundColor: LightColors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  volumeBtnText: {
+    color: LightColors.textLight,
+    fontSize: 16,
+    lineHeight: 20,
+  },
+  volumeValue: {
+    fontSize: 12,
+    color: LightColors.textPrimary,
+    minWidth: 36,
+    textAlign: 'center',
   },
   actionButtons: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
     marginTop: 4,
   },
   actionButton: {
@@ -220,25 +261,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginLeft: 4,
     minWidth: 55,
-    alignItems: "center",
+    alignItems: 'center',
   },
-  addButton: {
-    backgroundColor: LightColors.primary,
-  },
-  testButton: {
-    backgroundColor: LightColors.tertiary,
-  },
-  deleteButton: {
-    backgroundColor: LightColors.secondary,
-  },
+  addButton: { backgroundColor: LightColors.primary },
+  testButton: { backgroundColor: LightColors.tertiary },
+  deleteButton: { backgroundColor: LightColors.secondary },
   actionButtonText: {
     color: LightColors.textLight,
-    fontWeight: "600",
+    fontWeight: '600',
     fontSize: 12,
+  },
+  swipeDelete: {
+    backgroundColor: LightColors.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  swipeDeleteText: {
+    color: '#fff',
+    fontWeight: '600',
   },
   emptyText: {
     color: LightColors.textSecondary,
-    textAlign: "center",
+    textAlign: 'center',
     marginTop: 32,
     fontSize: 16,
   },

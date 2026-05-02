@@ -1,7 +1,8 @@
-import { SecureStoreAdapter } from "../hooks/useSecureStore";
-import { BluetoothSongMap, BluetoothSongMapping } from "../types/ble";
+import { SecureStoreAdapter } from '../hooks/useSecureStore';
+import type { BluetoothSongMap, BluetoothSongMapping } from '../types/ble';
+import { logger } from './logger';
 
-const BLUETOOTH_STORAGE_KEY = "bluetooth_song_mappings";
+const BLUETOOTH_STORAGE_KEY = 'bluetooth_song_mappings';
 
 /**
  * Loads all bluetooth-song mappings from secure storage
@@ -12,17 +13,18 @@ export const loadMappingsBTUtil = async (): Promise<BluetoothSongMapping[]> => {
     const mappingsObj: BluetoothSongMap = data ? JSON.parse(data) : {};
 
     const mappingsArray = Object.entries(mappingsObj).map(
-      ([id, { songName, songUri, name }]) => ({
-        id: id,
+      ([id, { songName, songUri, name, volume }]) => ({
+        id,
         name,
         songName,
         songUri,
-      })
+        volume: volume ?? 1,
+      }),
     );
 
     return mappingsArray;
   } catch (error) {
-    console.error("Error loading WiFi song mappings:", error);
+    logger.error('BTMapping', 'Error loading BT song mappings', error);
     return [];
   }
 };
@@ -34,25 +36,19 @@ export const saveMappingBTUtil = async (
   id: string,
   name: string,
   songUri: string,
-  songName: string
+  songName: string,
+  volume = 1,
 ): Promise<boolean> => {
   try {
     const data = await SecureStoreAdapter.getItem(BLUETOOTH_STORAGE_KEY);
     const mappings: BluetoothSongMap = data ? JSON.parse(data) : {};
 
-    mappings[id] = {
-      songUri,
-      songName,
-      name: name,
-    };
+    mappings[id] = { songUri, songName, name, volume };
 
-    await SecureStoreAdapter.setItem(
-      BLUETOOTH_STORAGE_KEY,
-      JSON.stringify(mappings)
-    );
+    await SecureStoreAdapter.setItem(BLUETOOTH_STORAGE_KEY, JSON.stringify(mappings));
     return true;
   } catch (error) {
-    console.error("Error saving mapping:", error);
+    logger.error('BTMapping', 'Error saving mapping', error);
     return false;
   }
 };
@@ -67,30 +63,40 @@ export const deleteMappingBTUtil = async (id: string): Promise<boolean> => {
 
     if (mappings[id]) {
       delete mappings[id];
-      await SecureStoreAdapter.setItem(
-        BLUETOOTH_STORAGE_KEY,
-        JSON.stringify(mappings)
-      );
+      await SecureStoreAdapter.setItem(BLUETOOTH_STORAGE_KEY, JSON.stringify(mappings));
     }
     return true;
   } catch (error) {
-    console.error("Error deleting mapping:", error);
+    logger.error('BTMapping', 'Error deleting mapping', error);
     return false;
   }
 };
 
-/**
- * Get a specific mapping by ID
- */
-export const getMappingByID = async (
-  id: string
-): Promise<{ songUri: string; songName: string; name: string } | null> => {
+export const updateVolumeBTUtil = async (id: string, volume: number): Promise<boolean> => {
   try {
     const data = await SecureStoreAdapter.getItem(BLUETOOTH_STORAGE_KEY);
     const mappings: BluetoothSongMap = data ? JSON.parse(data) : {};
-    return mappings[id] || null;
+    if (mappings[id]) {
+      mappings[id] = { ...mappings[id], volume };
+      await SecureStoreAdapter.setItem(BLUETOOTH_STORAGE_KEY, JSON.stringify(mappings));
+    }
+    return true;
   } catch (error) {
-    console.error("Error getting mapping:", error);
+    logger.error('BTMapping', 'Error updating volume', error);
+    return false;
+  }
+};
+
+export const getMappingByID = async (
+  id: string,
+): Promise<{ songUri: string; songName: string; name: string; volume: number } | null> => {
+  try {
+    const data = await SecureStoreAdapter.getItem(BLUETOOTH_STORAGE_KEY);
+    const mappings: BluetoothSongMap = data ? JSON.parse(data) : {};
+    const m = mappings[id];
+    return m ? { ...m, volume: m.volume ?? 1 } : null;
+  } catch (error) {
+    logger.error('BTMapping', 'Error getting mapping', error);
     return null;
   }
 };

@@ -1,31 +1,22 @@
-import { PolkaDotBackground } from "@/components/ui/polka-dot-background";
-import CurrentWifiCard from "@/components/world/current-wifi-card";
-import WifiList from "@/components/world/wifi-list";
-import { useWifiSongMapping } from "@/contexts/wifisongmaps.provider";
-import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { PolkaDotBackground } from '@/components/ui/polka-dot-background';
+import CurrentWifiCard from '@/components/world/current-wifi-card';
+import WifiList from '@/components/world/wifi-list';
+import { useWifiStore } from '@/lib/stores/wifi-store';
 
 const OverworldScreen = () => {
-  const {
-    mappings,
-    currentWifi,
-    loadMappings,
-    getCurrentWifi,
-    refreshMappings,
-  } = useWifiSongMapping();
-
-  useEffect(() => {
-    loadMappings();
-    getCurrentWifi();
-  }, [getCurrentWifi, loadMappings]);
+  const mappings = useWifiStore((s) => s.mappings);
+  const currentWifi = useWifiStore((s) => s.currentWifi);
+  const getCurrentWifi = useWifiStore((s) => s.getCurrentWifi);
+  const loadMappings = useWifiStore((s) => s.loadMappings);
 
   useFocusEffect(
     useCallback(() => {
       getCurrentWifi();
-      refreshMappings();
-      return () => {};
-    }, [getCurrentWifi, refreshMappings])
+      loadMappings();
+    }, [getCurrentWifi, loadMappings]),
   );
 
   return (
@@ -42,7 +33,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "transparent",
+    backgroundColor: 'transparent',
   },
 });
 

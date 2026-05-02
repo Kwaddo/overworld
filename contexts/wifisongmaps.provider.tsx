@@ -1,35 +1,34 @@
 import {
   createContext,
-  FC,
-  ReactNode,
+  type FC,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
-} from "react";
-import { Permission, PermissionsAndroid, Platform } from "react-native";
-import WifiManager from "react-native-wifi-reborn";
-import {
+} from 'react';
+import { type Permission, PermissionsAndroid, Platform } from 'react-native';
+import WifiManager from 'react-native-wifi-reborn';
+import type {
   WiFiSongMappingContextType as SongMappingContextType,
   WifiSongMapping,
-} from "../lib/types/wifi";
+} from '../lib/types/wifi';
 import {
   AUDIO_SOURCE_TYPES,
   hasBluetoothPriority,
   playSound,
   stopSound,
-} from "../lib/utils/controls";
+} from '../lib/utils/controls';
+import { logger } from '../lib/utils/logger';
 import {
   deleteMappingWifiUtil,
   getMappingByBSSID,
   loadMappingsWifiUtil,
   saveMappingWifiUtil,
-} from "../lib/utils/wiifmapping";
+} from '../lib/utils/wiifmapping';
 
-const WiFiSongMappingContext = createContext<
-  SongMappingContextType | undefined
->(undefined);
+const WiFiSongMappingContext = createContext<SongMappingContextType | undefined>(undefined);
 
 export const WiFiSongMappingProvider: FC<{
   children: ReactNode;
@@ -47,15 +46,9 @@ export const WiFiSongMappingProvider: FC<{
     ssid: string;
     bssid: string | null;
   }>({
-    ssid: "",
+    ssid: '',
     bssid: null,
   });
-
-  const [refreshFlag, setRefreshFlag] = useState(0);
-
-  const refreshMappings = useCallback(() => {
-    setRefreshFlag((prev) => prev + 1);
-  }, []);
 
   const loadMappings = useCallback(async () => {
     try {
@@ -63,45 +56,78 @@ export const WiFiSongMappingProvider: FC<{
       setMappings(mappingsArray);
       return mappingsArray;
     } catch (error) {
-      console.error("Error in loadMappings:", error);
+      logger.error('WiFiProvider', 'Error in loadMappings', error);
       return [];
     }
   }, []);
 
+  const refreshMappings = loadMappings;
+
   useEffect(() => {
     loadMappings();
-  }, [loadMappings, refreshFlag]);
+  }, [loadMappings]);
 
   const ensureWifiPermissions = useCallback(async () => {
-    if (Platform.OS !== "android") return true;
+    if (Platform.OS !== 'android') return true;
 
     const permissions: (Permission | undefined)[] = [
       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
       PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-      Platform.Version >= 33
-        ? PermissionsAndroid.PERMISSIONS.NEARBY_WIFI_DEVICES
-        : undefined,
+      Platform.Version >= 33 ? PermissionsAndroid.PERMISSIONS.NEARBY_WIFI_DEVICES : undefined,
     ];
 
     const toRequest = permissions.filter(Boolean) as Permission[];
     if (!toRequest.length) return true;
 
     const result = await PermissionsAndroid.requestMultiple(toRequest);
-    const granted = toRequest.every(
-      (perm) => result[perm] === PermissionsAndroid.RESULTS.GRANTED,
-    );
+    const granted = toRequest.every((perm) => result[perm] === PermissionsAndroid.RESULTS.GRANTED);
 
     return granted;
   }, []);
 
+  const playSongForCurrentWifiImmediate = useCallback(
+    async (wifiInfo: { ssid: string; bssid: string | null }) => {
+      const { bssid, ssid } = wifiInfo;
+
+      if (!bssid || !ssid) {
+        if (!hasBluetoothPriority()) {
+          await stopSound();
+        }
+        return;
+      }
+
+      try {
+        if (hasBluetoothPriority()) {
+          return;
+        }
+
+        const mapping = await getMappingByBSSID(bssid);
+
+        if (mapping) {
+          await playSound(mapping.songUri, bssid, AUDIO_SOURCE_TYPES.WIFI);
+        } else {
+          if (!hasBluetoothPriority()) {
+            await stopSound();
+          }
+        }
+      } catch (error) {
+        logger.error('WiFiProvider', 'Error in immediate playback', error);
+        if (!hasBluetoothPriority()) {
+          await stopSound();
+        }
+      }
+    },
+    [],
+  );
+
   const getCurrentWifi = useCallback(async () => {
-    if (Platform.OS === "android") {
+    if (Platform.OS === 'android') {
       const hasPerms = await ensureWifiPermissions();
       if (!hasPerms) {
         await stopSound();
         previousWifiRef.current = { ssid: null, bssid: null };
-        setCurrentWifi({ ssid: "", bssid: null });
-        return { ssid: "", bssid: null };
+        setCurrentWifi({ ssid: '', bssid: null });
+        return { ssid: '', bssid: null };
       }
     }
 
@@ -109,26 +135,23 @@ export const WiFiSongMappingProvider: FC<{
       const ssid = await WifiManager.getCurrentWifiSSID();
       let bssid = null;
 
-      if (!ssid || ssid === "" || ssid.toLowerCase() === "<unknown ssid>") {
+      if (!ssid || ssid === '' || ssid.toLowerCase() === '<unknown ssid>') {
         await stopSound();
         previousWifiRef.current = { ssid: null, bssid: null };
-        setCurrentWifi({ ssid: "", bssid: null });
-        return { ssid: "", bssid: null };
+        setCurrentWifi({ ssid: '', bssid: null });
+        return { ssid: '', bssid: null };
       }
 
       try {
         const networks = await WifiManager.loadWifiList();
-        const currentNetwork = networks.find(
-          (network) => network.SSID === ssid,
-        );
+        const currentNetwork = networks.find((network) => network.SSID === ssid);
         bssid = currentNetwork?.BSSID || null;
       } catch (error) {
-        console.error("Error loading WiFi list:", error);
+        logger.warn('WiFiProvider', 'Error loading WiFi list', error);
       }
 
       const wifiChanged =
-        previousWifiRef.current.ssid !== ssid ||
-        previousWifiRef.current.bssid !== bssid;
+        previousWifiRef.current.ssid !== ssid || previousWifiRef.current.bssid !== bssid;
 
       setCurrentWifi({ ssid, bssid });
 
@@ -139,13 +162,13 @@ export const WiFiSongMappingProvider: FC<{
 
       return { ssid, bssid };
     } catch (error) {
-      console.error("Error getting current WiFi:", error);
+      logger.error('WiFiProvider', 'Error getting current WiFi', error);
       await stopSound();
       previousWifiRef.current = { ssid: null, bssid: null };
-      setCurrentWifi({ ssid: "", bssid: null });
-      return { ssid: "", bssid: null };
+      setCurrentWifi({ ssid: '', bssid: null });
+      return { ssid: '', bssid: null };
     }
-  }, [ensureWifiPermissions]);
+  }, [ensureWifiPermissions, playSongForCurrentWifiImmediate]);
 
   const saveMapping = useCallback(
     async (bssid: string, ssid: string, songUri: string, songName: string) => {
@@ -175,41 +198,6 @@ export const WiFiSongMappingProvider: FC<{
     [currentWifi, refreshMappings],
   );
 
-  const playSongForCurrentWifiImmediate = async (wifiInfo: {
-    ssid: string;
-    bssid: string | null;
-  }) => {
-    const { bssid, ssid } = wifiInfo;
-
-    if (!bssid || !ssid) {
-      if (!hasBluetoothPriority()) {
-        await stopSound();
-      }
-      return;
-    }
-
-    try {
-      if (hasBluetoothPriority()) {
-        return;
-      }
-
-      const mapping = await getMappingByBSSID(bssid);
-
-      if (mapping) {
-        await playSound(mapping.songUri, bssid, AUDIO_SOURCE_TYPES.WIFI);
-      } else {
-        if (!hasBluetoothPriority()) {
-          await stopSound();
-        }
-      }
-    } catch (error) {
-      console.error("Error in immediate playback:", error);
-      if (!hasBluetoothPriority()) {
-        await stopSound();
-      }
-    }
-  };
-
   const testMapping = useCallback(async (bssid: string) => {
     try {
       const mapping = await getMappingByBSSID(bssid);
@@ -221,7 +209,7 @@ export const WiFiSongMappingProvider: FC<{
       }
       return false;
     } catch (error) {
-      console.error("Error testing mapping:", error);
+      logger.error('WiFiProvider', 'Error testing mapping', error);
       return false;
     }
   }, []);
@@ -246,21 +234,16 @@ export const WiFiSongMappingProvider: FC<{
         const mapping = allMappings.find((m) => m.bssid === bssid);
 
         if (mapping) {
-          await playSound(
-            mapping.songUri,
-            mapping.bssid,
-            AUDIO_SOURCE_TYPES.WIFI,
-            {
-              forceReplay: forcePlay,
-            },
-          );
+          await playSound(mapping.songUri, mapping.bssid, AUDIO_SOURCE_TYPES.WIFI, {
+            forceReplay: forcePlay,
+          });
         } else {
           if (!hasBluetoothPriority()) {
             await stopSound();
           }
         }
       } catch (error) {
-        console.error("Error playing song for current WiFi:", error);
+        logger.error('WiFiProvider', 'Error playing song for current WiFi', error);
         if (!hasBluetoothPriority()) {
           await stopSound();
         }
@@ -274,10 +257,8 @@ export const WiFiSongMappingProvider: FC<{
     let intervalId: ReturnType<typeof setInterval>;
 
     const setupWifiMonitoring = async () => {
-      if (Platform.OS === "android") {
-        await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        );
+      if (Platform.OS === 'android') {
+        await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
       }
 
       initialCheckTimeout = setTimeout(async () => {
@@ -288,7 +269,7 @@ export const WiFiSongMappingProvider: FC<{
         try {
           await playSongForCurrentWifi();
         } catch (error) {
-          console.error("Error in WiFi check interval:", error);
+          logger.error('WiFiProvider', 'Error in WiFi check interval', error);
         }
       }, 7000);
     };
@@ -323,9 +304,7 @@ export const WiFiSongMappingProvider: FC<{
 export const useWifiSongMapping = (): SongMappingContextType => {
   const context = useContext(WiFiSongMappingContext);
   if (context === undefined) {
-    throw new Error(
-      "useWifiSongMapping must be used within a WiFiSongMappingProvider",
-    );
+    throw new Error('useWifiSongMapping must be used within a WiFiSongMappingProvider');
   }
   return context;
 };

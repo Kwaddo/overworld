@@ -1,9 +1,9 @@
-import * as DocumentPicker from "expo-document-picker";
+import * as DocumentPicker from 'expo-document-picker';
 
 export const DocumentPickerAdapter = {
   getDocument: async () => {
     const result = await DocumentPicker.getDocumentAsync({
-      type: "audio/*",
+      type: 'audio/*',
       copyToCacheDirectory: true,
     });
 

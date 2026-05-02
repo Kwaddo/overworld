@@ -3,6 +3,7 @@ export type WifiSongMap = {
     songUri: string;
     songName: string;
     wifiName: string;
+    volume?: number;
   };
 };
 
@@ -11,6 +12,7 @@ export type WifiSongMapping = {
   wifiName: string;
   songName: string;
   songUri: string;
+  volume: number;
 };
 
 export type WiFiSongMappingContextType = {
@@ -24,12 +26,7 @@ export type WiFiSongMappingContextType = {
     ssid: string;
     bssid: string | null;
   }>;
-  saveMapping: (
-    bssid: string,
-    ssid: string,
-    songUri: string,
-    songName: string
-  ) => Promise<boolean>;
+  saveMapping: (bssid: string, ssid: string, songUri: string, songName: string) => Promise<boolean>;
   deleteMapping: (bssid: string) => Promise<boolean>;
   playSongForCurrentWifi: () => Promise<void>;
   testMapping: (bssid: string) => Promise<boolean>;

@@ -1,19 +1,58 @@
-import DSText from "@/components/ui/ds-text";
-import { PolkaDotBackground } from "@/components/ui/polka-dot-background";
-import { LightColors } from "@/constants/Colors";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import DSText from '@/components/ui/ds-text';
+import { PolkaDotBackground } from '@/components/ui/polka-dot-background';
+import { LightColors } from '@/constants/Colors';
+import { useBtStore } from '@/lib/stores/bt-store';
+import { useWifiStore } from '@/lib/stores/wifi-store';
+import { exportMappings, importMappings } from '@/lib/utils/backup';
 
 const InfoScreen = () => {
+  const loadWifi = useWifiStore((s) => s.loadMappings);
+  const loadBt = useBtStore((s) => s.loadMappings);
+
+  const handleExport = async () => {
+    const ok = await exportMappings();
+    if (!ok) Alert.alert('Export failed', 'Could not share the backup file.');
+  };
+
+  const handleImport = async () => {
+    const result = await importMappings();
+    if (!result) {
+      Alert.alert('Import failed', 'Could not read the backup file.');
+      return;
+    }
+    await Promise.all([loadWifi(), loadBt()]);
+    Alert.alert(
+      'Import successful',
+      `Restored ${result.wifi} WiFi mapping(s) and ${result.bluetooth} Bluetooth mapping(s).`,
+    );
+  };
+
   return (
     <PolkaDotBackground>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <DSText style={styles.title}>How to Use Overworld</DSText>
 
         <View style={styles.section}>
+          <DSText style={styles.sectionTitle}>Backup & Restore</DSText>
+          <DSText style={styles.description}>
+            Export all your WiFi and Bluetooth mappings to a JSON file, or restore them from a
+            previous backup.
+          </DSText>
+          <View style={styles.backupRow}>
+            <TouchableOpacity style={[styles.backupBtn, styles.exportBtn]} onPress={handleExport}>
+              <DSText style={styles.backupBtnText}>Export</DSText>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.backupBtn, styles.importBtn]} onPress={handleImport}>
+              <DSText style={styles.backupBtnText}>Import</DSText>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <DSText style={styles.sectionTitle}>🌍 Overworld Tab</DSText>
           <DSText style={styles.description}>
-            Associate songs with WiFi networks for automatic playback when you
-            connect.
+            Associate songs with WiFi networks for automatic playback when you connect.
           </DSText>
 
           <View style={styles.stepContainer}>
@@ -23,23 +62,18 @@ const InfoScreen = () => {
 
           <View style={styles.stepContainer}>
             <DSText style={styles.stepNumber}>2.</DSText>
-            <DSText style={styles.stepText}>
-              Tap &quot;Map Song to This Network&quot;
-            </DSText>
+            <DSText style={styles.stepText}>Tap &quot;Map Song to This Network&quot;</DSText>
           </View>
 
           <View style={styles.stepContainer}>
             <DSText style={styles.stepNumber}>3.</DSText>
-            <DSText style={styles.stepText}>
-              Choose an audio file from your device
-            </DSText>
+            <DSText style={styles.stepText}>Choose an audio file from your device</DSText>
           </View>
 
           <View style={styles.stepContainer}>
             <DSText style={styles.stepNumber}>4.</DSText>
             <DSText style={styles.stepText}>
-              Your song will now play automatically when you connect to this
-              network
+              Your song will now play automatically when you connect to this network
             </DSText>
           </View>
         </View>
@@ -47,15 +81,13 @@ const InfoScreen = () => {
         <View style={styles.section}>
           <DSText style={styles.sectionTitle}>📱 Encounters Tab</DSText>
           <DSText style={styles.description}>
-            Map songs to nearby phones and devices via Bluetooth for automatic
-            playback when they&apos;re detected.
+            Map songs to nearby phones and devices via Bluetooth for automatic playback when
+            they&apos;re detected.
           </DSText>
 
           <View style={styles.stepContainer}>
             <DSText style={styles.stepNumber}>1.</DSText>
-            <DSText style={styles.stepText}>
-              Make sure Bluetooth is enabled on your device
-            </DSText>
+            <DSText style={styles.stepText}>Make sure Bluetooth is enabled on your device</DSText>
           </View>
 
           <View style={styles.stepContainer}>
@@ -90,8 +122,8 @@ const InfoScreen = () => {
         <View style={styles.section}>
           <DSText style={styles.sectionTitle}>📍 Location Access</DSText>
           <DSText style={styles.description}>
-            Location is required on Android to read the current WiFi network and
-            to scan for Bluetooth devices.
+            Location is required on Android to read the current WiFi network and to scan for
+            Bluetooth devices.
           </DSText>
 
           <View style={styles.stepContainer}>
@@ -104,8 +136,7 @@ const InfoScreen = () => {
           <View style={styles.stepContainer}>
             <DSText style={styles.stepNumber}>2.</DSText>
             <DSText style={styles.stepText}>
-              When prompted in-app, grant location permission (Allow While Using
-              the App)
+              When prompted in-app, grant location permission (Allow While Using the App)
             </DSText>
           </View>
 
@@ -140,8 +171,7 @@ const InfoScreen = () => {
 
           <View style={styles.tipContainer}>
             <DSText style={styles.tipText}>
-              Use shorter audio files to avoid interruption when switching
-              locations
+              Use shorter audio files to avoid interruption when switching locations
             </DSText>
           </View>
         </View>
@@ -158,7 +188,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     color: LightColors.textPrimary,
-    textAlign: "center",
+    textAlign: 'center',
     marginBottom: 24,
   },
   section: {
@@ -179,14 +209,14 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   stepContainer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     marginBottom: 12,
   },
   stepNumber: {
     fontSize: 18,
     color: LightColors.primary,
-    fontWeight: "600",
+    fontWeight: '600',
     width: 24,
   },
   stepText: {
@@ -196,8 +226,8 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   featureContainer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     marginBottom: 8,
   },
   featureBullet: {
@@ -212,7 +242,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   bold: {
-    fontWeight: "600",
+    fontWeight: '600',
     color: LightColors.primary,
   },
   tipContainer: {
@@ -227,6 +257,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: LightColors.textSecondary,
     lineHeight: 20,
+  },
+  backupRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  backupBtn: {
+    flex: 1,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  exportBtn: {
+    backgroundColor: LightColors.primary,
+  },
+  importBtn: {
+    backgroundColor: LightColors.tertiary,
+  },
+  backupBtnText: {
+    color: LightColors.textLight,
+    fontSize: 18,
   },
 });
 

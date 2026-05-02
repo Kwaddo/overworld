@@ -1,16 +1,13 @@
-import { LightColors } from "@/constants/Colors";
-import { FC, ReactNode, useState } from "react";
-import { StyleSheet, View, ViewStyle } from "react-native";
+import { type FC, type ReactNode, useState } from 'react';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { LightColors } from '@/constants/Colors';
 
 interface PolkaDotBackgroundProps {
   style?: ViewStyle;
   children?: ReactNode;
 }
 
-export const PolkaDotBackground: FC<PolkaDotBackgroundProps> = ({
-  style,
-  children,
-}) => {
+export const PolkaDotBackground: FC<PolkaDotBackgroundProps> = ({ style, children }) => {
   const [layout, setLayout] = useState({ width: 0, height: 0 });
   const dotSize = 4;
   const spacing = 50;
@@ -38,7 +35,7 @@ export const PolkaDotBackground: FC<PolkaDotBackgroundProps> = ({
                 top: i * spacing,
               },
             ]}
-          />
+          />,
         );
       }
     }
@@ -63,10 +60,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: LightColors.background,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   dot: {
-    position: "absolute",
+    position: 'absolute',
     opacity: 0.7,
   },
 });
