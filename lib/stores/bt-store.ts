@@ -101,6 +101,7 @@ export const useBtStore = create<BTState & BTActions>((set, get) => ({
           forceReplay: true,
           volume: mapping.volume,
           notificationTitle: mapping.songName,
+          networkName: mapping.name,
         });
         return true;
       }
@@ -173,6 +174,7 @@ export const useBtStore = create<BTState & BTActions>((set, get) => ({
               forceReplay: false,
               volume: mapping.volume,
               notificationTitle: mapping.songName,
+              networkName: device.name ?? mapping.name,
             });
           await play();
 

@@ -1,3 +1,4 @@
+import NetInfo from '@react-native-community/netinfo';
 import { type Permission, PermissionsAndroid, Platform } from 'react-native';
 import WifiManager from 'react-native-wifi-reborn';
 import { create } from 'zustand';
@@ -31,6 +32,7 @@ const ensureWifiPermissions = async (): Promise<boolean> => {
 interface WiFiState {
   mappings: WifiSongMapping[];
   currentWifi: { ssid: string; bssid: string | null };
+  locationBlocked: boolean;
 }
 
 interface WiFiActions {
@@ -50,6 +52,7 @@ interface WiFiActions {
 export const useWifiStore = create<WiFiState & WiFiActions>((set, get) => ({
   mappings: [],
   currentWifi: { ssid: '', bssid: null },
+  locationBlocked: false,
 
   loadMappings: async () => {
     try {
@@ -90,6 +93,7 @@ export const useWifiStore = create<WiFiState & WiFiActions>((set, get) => ({
           forceReplay: true,
           volume: mapping.volume,
           notificationTitle: mapping.songName,
+          networkName: mapping.wifiName,
         });
         return true;
       }
@@ -112,6 +116,7 @@ export const useWifiStore = create<WiFiState & WiFiActions>((set, get) => ({
         await playSound(mapping.songUri, bssid, AUDIO_SOURCE_TYPES.WIFI, {
           volume: mapping.volume,
           notificationTitle: mapping.songName,
+          networkName: ssid,
         });
       } else if (!hasBluetoothPriority()) {
         await stopSound();
@@ -128,7 +133,7 @@ export const useWifiStore = create<WiFiState & WiFiActions>((set, get) => ({
       if (!hasPerms) {
         await stopSound();
         previousWifi = { ssid: null, bssid: null };
-        set({ currentWifi: { ssid: '', bssid: null } });
+        set({ currentWifi: { ssid: '', bssid: null }, locationBlocked: true });
         return { ssid: '', bssid: null };
       }
     }
@@ -137,9 +142,11 @@ export const useWifiStore = create<WiFiState & WiFiActions>((set, get) => ({
       let bssid: string | null = null;
 
       if (!ssid || ssid === '' || ssid.toLowerCase() === '<unknown ssid>') {
+        const netState = await NetInfo.fetch();
+        const wifiConnectedButBlocked = netState.type === 'wifi' && netState.isConnected === true;
         await stopSound();
         previousWifi = { ssid: null, bssid: null };
-        set({ currentWifi: { ssid: '', bssid: null } });
+        set({ currentWifi: { ssid: '', bssid: null }, locationBlocked: wifiConnectedButBlocked });
         return { ssid: '', bssid: null };
       }
 
@@ -151,7 +158,7 @@ export const useWifiStore = create<WiFiState & WiFiActions>((set, get) => ({
       }
 
       const wifiChanged = previousWifi.ssid !== ssid || previousWifi.bssid !== bssid;
-      set({ currentWifi: { ssid, bssid } });
+      set({ currentWifi: { ssid, bssid }, locationBlocked: false });
 
       if (wifiChanged) {
         previousWifi = { ssid, bssid };
@@ -163,7 +170,7 @@ export const useWifiStore = create<WiFiState & WiFiActions>((set, get) => ({
       logger.error('WiFiStore', 'Error getting current WiFi', error);
       await stopSound();
       previousWifi = { ssid: null, bssid: null };
-      set({ currentWifi: { ssid: '', bssid: null } });
+      set({ currentWifi: { ssid: '', bssid: null }, locationBlocked: true });
       return { ssid: '', bssid: null };
     }
   },
@@ -183,6 +190,7 @@ export const useWifiStore = create<WiFiState & WiFiActions>((set, get) => ({
           forceReplay: forcePlay,
           volume: mapping.volume,
           notificationTitle: mapping.songName,
+          networkName: mapping.wifiName,
         });
       } else if (!hasBluetoothPriority()) {
         await stopSound();

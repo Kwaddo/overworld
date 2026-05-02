@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
+import { LocationWarningBanner } from '@/components/ui/location-warning-banner';
 import { NowPlayingBar } from '@/components/ui/now-playing-bar';
 import TabBarIcon from '@/components/ui/tabbar-icon';
 import { LightColors } from '@/constants/Colors';
@@ -7,6 +8,8 @@ import { LightColors } from '@/constants/Colors';
 export default function TabLayout() {
   return (
     <View style={{ flex: 1 }}>
+      <NowPlayingBar />
+      <LocationWarningBanner />
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: LightColors.primary,
@@ -64,7 +67,6 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
-      <NowPlayingBar />
     </View>
   );
 }

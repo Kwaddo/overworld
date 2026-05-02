@@ -6,6 +6,13 @@ import { useBtStore } from '@/lib/stores/bt-store';
 import { useWifiStore } from '@/lib/stores/wifi-store';
 import { exportMappings, importMappings } from '@/lib/utils/backup';
 
+const TIPS = [
+  'Pair your Bluetooth device first for reliable detection',
+  'Keep the app running in the background for automatic playback',
+  'Use shorter audio files to avoid interruption when switching networks',
+  'BT mappings always override WiFi when a device is nearby',
+];
+
 const InfoScreen = () => {
   const loadWifi = useWifiStore((s) => s.loadMappings);
   const loadBt = useBtStore((s) => s.loadMappings);
@@ -30,254 +37,205 @@ const InfoScreen = () => {
 
   return (
     <PolkaDotBackground>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <DSText style={styles.title}>How to Use Overworld</DSText>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <DSText style={styles.appName}>OVERWORLD</DSText>
+          <DSText style={styles.tagline}>Location-triggered music player</DSText>
+        </View>
 
-        <View style={styles.section}>
-          <DSText style={styles.sectionTitle}>Backup & Restore</DSText>
-          <DSText style={styles.description}>
-            Export all your WiFi and Bluetooth mappings to a JSON file, or restore them from a
-            previous backup.
+        <View style={styles.card}>
+          <DSText style={styles.cardTitle}>Backup & Restore</DSText>
+          <DSText style={styles.cardDesc}>
+            Save your WiFi and Bluetooth mappings to a file, or restore from a previous backup.
           </DSText>
-          <View style={styles.backupRow}>
-            <TouchableOpacity style={[styles.backupBtn, styles.exportBtn]} onPress={handleExport}>
-              <DSText style={styles.backupBtnText}>Export</DSText>
+          <View style={styles.btnRow}>
+            <TouchableOpacity style={[styles.btn, styles.btnExport]} onPress={handleExport}>
+              <DSText style={styles.btnText}>↑ Export</DSText>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.backupBtn, styles.importBtn]} onPress={handleImport}>
-              <DSText style={styles.backupBtnText}>Import</DSText>
+            <TouchableOpacity style={[styles.btn, styles.btnImport]} onPress={handleImport}>
+              <DSText style={styles.btnText}>↓ Import</DSText>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <DSText style={styles.sectionTitle}>🌍 Overworld Tab</DSText>
-          <DSText style={styles.description}>
-            Associate songs with WiFi networks for automatic playback when you connect.
-          </DSText>
+        <DSText style={styles.groupLabel}>HOW IT WORKS</DSText>
 
-          <View style={styles.stepContainer}>
-            <DSText style={styles.stepNumber}>1.</DSText>
-            <DSText style={styles.stepText}>Connect to any WiFi network</DSText>
-          </View>
-
-          <View style={styles.stepContainer}>
-            <DSText style={styles.stepNumber}>2.</DSText>
-            <DSText style={styles.stepText}>Tap &quot;Map Song to This Network&quot;</DSText>
-          </View>
-
-          <View style={styles.stepContainer}>
-            <DSText style={styles.stepNumber}>3.</DSText>
-            <DSText style={styles.stepText}>Choose an audio file from your device</DSText>
-          </View>
-
-          <View style={styles.stepContainer}>
-            <DSText style={styles.stepNumber}>4.</DSText>
-            <DSText style={styles.stepText}>
-              Your song will now play automatically when you connect to this network
+        <View style={styles.featureCard}>
+          <DSText style={styles.featureIcon}>🌍</DSText>
+          <View style={styles.featureBody}>
+            <DSText style={styles.featureName}>WiFi Mappings</DSText>
+            <DSText style={styles.featureDesc}>
+              Connect to a network, tap &quot;Map Song to This Network&quot;, and pick an audio
+              file. That song plays automatically every time you join that network.
             </DSText>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <DSText style={styles.sectionTitle}>📱 Encounters Tab</DSText>
-          <DSText style={styles.description}>
-            Map songs to nearby phones and devices via Bluetooth for automatic playback when
-            they&apos;re detected.
-          </DSText>
-
-          <View style={styles.stepContainer}>
-            <DSText style={styles.stepNumber}>1.</DSText>
-            <DSText style={styles.stepText}>Make sure Bluetooth is enabled on your device</DSText>
-          </View>
-
-          <View style={styles.stepContainer}>
-            <DSText style={styles.stepNumber}>2.</DSText>
-            <DSText style={styles.stepText}>
-              The app automatically scans for nearby devices within 5m
-            </DSText>
-          </View>
-
-          <View style={styles.stepContainer}>
-            <DSText style={styles.stepNumber}>3.</DSText>
-            <DSText style={styles.stepText}>
-              Tap &quot;Add Song&quot; next to any detected device
-            </DSText>
-          </View>
-
-          <View style={styles.stepContainer}>
-            <DSText style={styles.stepNumber}>4.</DSText>
-            <DSText style={styles.stepText}>
-              Choose an audio file to associate with that device
-            </DSText>
-          </View>
-
-          <View style={styles.stepContainer}>
-            <DSText style={styles.stepNumber}>5.</DSText>
-            <DSText style={styles.stepText}>
-              The song will play automatically when the device is nearby
+        <View style={styles.featureCard}>
+          <DSText style={styles.featureIcon}>📱</DSText>
+          <View style={styles.featureBody}>
+            <DSText style={styles.featureName}>BT Encounters</DSText>
+            <DSText style={styles.featureDesc}>
+              The app scans for nearby BLE devices and plays their mapped song when detected.
+              Bluetooth always takes priority over WiFi.
             </DSText>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <DSText style={styles.sectionTitle}>📍 Location Access</DSText>
-          <DSText style={styles.description}>
-            Location is required on Android to read the current WiFi network and to scan for
-            Bluetooth devices.
-          </DSText>
-
-          <View style={styles.stepContainer}>
-            <DSText style={styles.stepNumber}>1.</DSText>
-            <DSText style={styles.stepText}>
-              Open your device Settings and turn on Location Services
-            </DSText>
-          </View>
-
-          <View style={styles.stepContainer}>
-            <DSText style={styles.stepNumber}>2.</DSText>
-            <DSText style={styles.stepText}>
-              When prompted in-app, grant location permission (Allow While Using the App)
-            </DSText>
-          </View>
-
-          <View style={styles.stepContainer}>
-            <DSText style={styles.stepNumber}>3.</DSText>
-            <DSText style={styles.stepText}>
-              If WiFi/BT detection fails, confirm Location is still enabled
+        <View style={[styles.featureCard, styles.noticeCard]}>
+          <DSText style={styles.featureIcon}>📍</DSText>
+          <View style={styles.featureBody}>
+            <DSText style={styles.featureName}>Location Required</DSText>
+            <DSText style={styles.featureDesc}>
+              Android needs location access to read your WiFi network name and scan for Bluetooth
+              devices. If auto-play stops, check that location is on and permission is granted.
             </DSText>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <DSText style={styles.sectionTitle}>💡 Tips</DSText>
+        <DSText style={styles.groupLabel}>TIPS</DSText>
 
-          <View style={styles.tipContainer}>
-            <DSText style={styles.tipText}>
-              The best way to discover a device is to pair with it first
-            </DSText>
-          </View>
-
-          <View style={styles.tipContainer}>
-            <DSText style={styles.tipText}>
-              Grant location and Bluetooth permissions for best experience
-            </DSText>
-          </View>
-
-          <View style={styles.tipContainer}>
-            <DSText style={styles.tipText}>
-              Keep the app running in background for automatic playback
-            </DSText>
-          </View>
-
-          <View style={styles.tipContainer}>
-            <DSText style={styles.tipText}>
-              Use shorter audio files to avoid interruption when switching locations
-            </DSText>
-          </View>
+        <View style={styles.card}>
+          {TIPS.map((tip, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: static list, no reorder
+            <View key={i} style={[styles.tipRow, i < TIPS.length - 1 && styles.tipDivider]}>
+              <DSText style={styles.tipBullet}>▸</DSText>
+              <DSText style={styles.tipText}>{tip}</DSText>
+            </View>
+          ))}
         </View>
+
+        <View style={styles.footer} />
       </ScrollView>
     </PolkaDotBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  scroll: {
     flex: 1,
-    padding: 14,
   },
-  title: {
-    fontSize: 32,
-    color: LightColors.textPrimary,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  section: {
-    backgroundColor: LightColors.cardBackground,
-    borderRadius: 12,
+  content: {
     padding: 16,
-    marginBottom: 16,
+    paddingBottom: 32,
   },
-  sectionTitle: {
-    fontSize: 24,
-    color: LightColors.textPrimary,
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 16,
-    color: LightColors.textSecondary,
-    marginBottom: 16,
-    lineHeight: 22,
-  },
-  stepContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  stepNumber: {
-    fontSize: 18,
-    color: LightColors.primary,
-    fontWeight: '600',
-    width: 24,
-  },
-  stepText: {
-    fontSize: 16,
-    color: LightColors.textPrimary,
-    flex: 1,
-    lineHeight: 22,
-  },
-  featureContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  featureBullet: {
-    fontSize: 18,
-    color: LightColors.primary,
-    width: 20,
-  },
-  featureText: {
-    fontSize: 16,
-    color: LightColors.textPrimary,
-    flex: 1,
-    lineHeight: 22,
-  },
-  bold: {
-    fontWeight: '600',
-    color: LightColors.primary,
-  },
-  tipContainer: {
-    backgroundColor: LightColors.background,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: LightColors.primary,
-  },
-  tipText: {
-    fontSize: 14,
-    color: LightColors.textSecondary,
-    lineHeight: 20,
-  },
-  backupRow: {
-    flexDirection: 'row',
-    gap: 12,
+  header: {
+    alignItems: 'center',
+    marginBottom: 24,
     marginTop: 8,
   },
-  backupBtn: {
+  appName: {
+    fontSize: 34,
+    color: LightColors.textPrimary,
+    letterSpacing: 4,
+  },
+  tagline: {
+    fontSize: 14,
+    color: LightColors.textSecondary,
+    marginTop: 4,
+  },
+  card: {
+    backgroundColor: LightColors.cardBackground,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 22,
+    color: LightColors.textPrimary,
+    marginBottom: 6,
+  },
+  cardDesc: {
+    fontSize: 15,
+    color: LightColors.textSecondary,
+    lineHeight: 22,
+    marginBottom: 14,
+  },
+  btnRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  btn: {
     flex: 1,
-    borderRadius: 8,
-    paddingVertical: 12,
+    borderRadius: 10,
+    paddingVertical: 13,
     alignItems: 'center',
   },
-  exportBtn: {
+  btnExport: {
     backgroundColor: LightColors.primary,
   },
-  importBtn: {
+  btnImport: {
     backgroundColor: LightColors.tertiary,
   },
-  backupBtnText: {
-    color: LightColors.textLight,
+  btnText: {
+    color: '#000',
     fontSize: 18,
+  },
+  groupLabel: {
+    fontSize: 12,
+    color: LightColors.textSecondary,
+    letterSpacing: 2,
+    marginBottom: 8,
+    marginTop: 4,
+    paddingLeft: 4,
+  },
+  featureCard: {
+    backgroundColor: LightColors.cardBackground,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
+    flexDirection: 'row',
+    gap: 14,
+    alignItems: 'flex-start',
+  },
+  noticeCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: LightColors.secondary,
+  },
+  featureIcon: {
+    fontSize: 28,
+    marginTop: 2,
+  },
+  featureBody: {
+    flex: 1,
+  },
+  featureName: {
+    fontSize: 20,
+    color: LightColors.textPrimary,
+    marginBottom: 6,
+  },
+  featureDesc: {
+    fontSize: 15,
+    color: LightColors.textSecondary,
+    lineHeight: 22,
+  },
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 10,
+    gap: 10,
+  },
+  tipDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: `${LightColors.primary}44`,
+  },
+  tipBullet: {
+    fontSize: 16,
+    color: LightColors.primary,
+    marginTop: 1,
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 15,
+    color: LightColors.textPrimary,
+    lineHeight: 22,
+  },
+  footer: {
+    height: 16,
   },
 });
 

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, TouchableOpacity } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LightColors } from '@/constants/Colors';
 import { getCurrentlyPlaying, stopSound } from '@/lib/utils/controls';
 import { parseSongTitle } from '@/lib/utils/songTitle';
@@ -15,23 +16,16 @@ const useNowPlayingPoll = () => {
 };
 
 export const NowPlayingBar = () => {
-  const { id, isPlaying } = useNowPlayingPoll();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: isPlaying ? 1 : 0,
-      duration: 250,
-      useNativeDriver: true,
-    }).start();
-  }, [isPlaying, fadeAnim]);
+  const { id, isPlaying, songName, networkName } = useNowPlayingPoll();
+  const insets = useSafeAreaInsets();
 
   if (!isPlaying || !id) return null;
 
-  const title = parseSongTitle(id.split('/').pop() ?? id);
+  const displayName = songName ?? parseSongTitle(id.split('/').pop() ?? id);
+  const title = networkName ? `${networkName} - ${displayName}` : displayName;
 
   return (
-    <Animated.View style={[styles.bar, { opacity: fadeAnim }]}>
+    <View style={[styles.bar, { paddingTop: insets.top + 10 }]}>
       <DSText style={styles.note}>♪</DSText>
       <DSText style={styles.title} numberOfLines={1}>
         {title}
@@ -39,23 +33,19 @@ export const NowPlayingBar = () => {
       <TouchableOpacity onPress={stopSound} style={styles.stopBtn}>
         <DSText style={styles.stopText}>■</DSText>
       </TouchableOpacity>
-    </Animated.View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   bar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: LightColors.cardBackground,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: LightColors.primary,
+    paddingBottom: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: LightColors.primary,
     gap: 8,
   },
   note: {

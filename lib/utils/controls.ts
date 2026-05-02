@@ -26,6 +26,8 @@ let currentlyPlaying = {
   isPlaying: false,
   type: 0,
   lastPlayedAt: 0,
+  songName: null as string | null,
+  networkName: null as string | null,
 };
 
 let currentStatusListener: ((status: AudioStatus) => void) | null = null;
@@ -61,6 +63,8 @@ export const stopSound = async (): Promise<void> => {
     await audioPlayer.remove();
     audioPlayer.volume = 1;
     currentlyPlaying.isPlaying = false;
+    currentlyPlaying.songName = null;
+    currentlyPlaying.networkName = null;
     dismissNowPlayingNotification();
   } catch (error) {
     logger.error('AudioControls', 'Error stopping sound', error);
@@ -83,10 +87,17 @@ export const playSound = async (
     looping?: boolean;
     volume?: number;
     notificationTitle?: string;
+    networkName?: string;
   } = {},
 ): Promise<void> => {
   try {
-    const { forceReplay = false, looping = false, volume = 1, notificationTitle } = options;
+    const {
+      forceReplay = false,
+      looping = false,
+      volume = 1,
+      notificationTitle,
+      networkName,
+    } = options;
     const now = Date.now();
 
     if (!forceReplay && currentlyPlaying.isPlaying) {
@@ -123,6 +134,8 @@ export const playSound = async (
       isPlaying: true,
       lastPlayedAt: now,
       type,
+      songName: notificationTitle ?? null,
+      networkName: networkName ?? null,
     };
 
     if (notificationTitle) {
