@@ -5,6 +5,13 @@ import { dismissNowPlayingNotification, showNowPlayingNotification } from './not
 
 const audioPlayer = createAudioPlayer();
 
+// Registered by keepalive.ts — called before any playback starts so the silent
+// player is torn down before the real audio session is established.
+let prePlayHook: (() => Promise<void>) | null = null;
+export const registerPrePlayHook = (hook: () => Promise<void>): void => {
+  prePlayHook = hook;
+};
+
 AppState.addEventListener('change', (state) => {
   if (Platform.OS === 'ios' && state === 'active' && currentlyPlaying.isPlaying) {
     setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true }).catch((e) =>
@@ -58,16 +65,28 @@ export const stopSound = async (): Promise<void> => {
       currentStatusListener = null;
     }
 
-    if (currentlyPlaying.isPlaying) await fadeOut();
-    await audioPlayer.pause();
-    await audioPlayer.remove();
-    audioPlayer.volume = 1;
+    const wasPlaying = currentlyPlaying.isPlaying;
+    // Clear state first — if the async ops below throw, callers still see
+    // isPlaying = false and won't attempt a redundant restart.
     currentlyPlaying.isPlaying = false;
     currentlyPlaying.songName = null;
     currentlyPlaying.networkName = null;
     dismissNowPlayingNotification();
+
+    if (wasPlaying) await fadeOut();
+    await audioPlayer.pause();
+    try {
+      audioPlayer.remove();
+    } catch (removeError) {
+      logger.warn('AudioControls', 'Non-fatal: player remove failed', removeError);
+    }
+    audioPlayer.volume = 1;
   } catch (error) {
     logger.error('AudioControls', 'Error stopping sound', error);
+    currentlyPlaying.isPlaying = false;
+    currentlyPlaying.songName = null;
+    currentlyPlaying.networkName = null;
+    dismissNowPlayingNotification();
   }
 };
 
@@ -112,6 +131,7 @@ export const playSound = async (
       }
     }
 
+    if (prePlayHook) await prePlayHook().catch(() => {});
     await stopSound();
 
     try {

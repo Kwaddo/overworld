@@ -50,7 +50,8 @@ export const useInitStores = () => {
           playSongForCurrentWifi().catch((e) =>
             logger.error('InitStores', 'NetInfo connect handler error', e),
           );
-        } else if (state.type !== 'wifi') {
+        } else {
+          // Covers: non-wifi, wifi-but-disconnected, and no-connection states
           const { isPlaying, type } = getCurrentlyPlaying();
           if (isPlaying && type === AUDIO_SOURCE_TYPES.WIFI && !hasBluetoothPriority()) {
             stopSound().catch((e) =>

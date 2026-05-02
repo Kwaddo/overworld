@@ -138,13 +138,22 @@ export const useWifiStore = create<WiFiState & WiFiActions>((set, get) => ({
       }
     }
     try {
+      // Check NetInfo first — prevents acting on a stale SSID that WifiManager
+      // briefly returns right after the OS disconnects from a network.
+      const netState = await NetInfo.fetch();
+      if (netState.type !== 'wifi' || !netState.isConnected) {
+        if (!hasBluetoothPriority()) await stopSound();
+        previousWifi = { ssid: null, bssid: null };
+        set({ currentWifi: { ssid: '', bssid: null }, locationBlocked: false });
+        return { ssid: '', bssid: null };
+      }
+
       const ssid = await WifiManager.getCurrentWifiSSID();
       let bssid: string | null = null;
 
       if (!ssid || ssid === '' || ssid.toLowerCase() === '<unknown ssid>') {
-        const netState = await NetInfo.fetch();
         const wifiConnectedButBlocked = netState.type === 'wifi' && netState.isConnected === true;
-        await stopSound();
+        if (!hasBluetoothPriority()) await stopSound();
         previousWifi = { ssid: null, bssid: null };
         set({ currentWifi: { ssid: '', bssid: null }, locationBlocked: wifiConnectedButBlocked });
         return { ssid: '', bssid: null };

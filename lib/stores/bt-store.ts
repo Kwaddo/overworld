@@ -17,7 +17,31 @@ const bleManager = new BleManager();
 // Module-level refs (store is a singleton)
 let previousDeviceId: string | null = null;
 let songLoopInterval: ReturnType<typeof setInterval> | null = null;
-let scanInterval: ReturnType<typeof setInterval> | null = null;
+let scanTimer: ReturnType<typeof setTimeout> | null = null;
+let scanActive = false;
+
+// Discovery mode: infrequent long scans when no device is paired.
+// Monitoring mode: short frequent scans while a device is paired so disappearance
+// is detected within ~8 seconds instead of ~35 seconds.
+const DISCOVERY = { scanMs: 10_000, waitMs: 25_000 };
+const MONITORING = { scanMs: 3_000, waitMs: 5_000 };
+
+async function runScanCycle(): Promise<void> {
+  if (!scanActive) return;
+  const store = useBtStore.getState();
+  const mode = store.currentPairedDevice ? MONITORING : DISCOVERY;
+  try {
+    const devices = await store.scanForNearbyDevices(mode.scanMs);
+    await store.checkForDisconnectedDevices(devices);
+    await store.checkForMappedDevices(devices);
+  } catch (e) {
+    logger.error('BTStore', 'Scan cycle error', e);
+  }
+  if (scanActive) {
+    const waitMode = useBtStore.getState().currentPairedDevice ? MONITORING : DISCOVERY;
+    scanTimer = setTimeout(runScanCycle, waitMode.waitMs);
+  }
+}
 
 const requestPermissions = async (): Promise<boolean> => {
   if (Platform.OS === 'android') {
@@ -44,7 +68,7 @@ interface BTActions {
   deleteMapping: (id: string) => Promise<boolean>;
   testMapping: (id: string) => Promise<boolean>;
   updateVolume: (id: string, volume: number) => Promise<boolean>;
-  scanForNearbyDevices: () => Promise<Device[]>;
+  scanForNearbyDevices: (scanDuration?: number) => Promise<Device[]>;
   startContinuousScanning: () => void;
   stopContinuousScanning: () => void;
   checkForMappedDevices: (devices: Device[]) => Promise<void>;
@@ -118,7 +142,7 @@ export const useBtStore = create<BTState & BTActions>((set, get) => ({
     return result;
   },
 
-  scanForNearbyDevices: async () => {
+  scanForNearbyDevices: async (scanDuration = 10_000) => {
     try {
       const hasPerms = await requestPermissions();
       if (!hasPerms) return [];
@@ -153,7 +177,7 @@ export const useBtStore = create<BTState & BTActions>((set, get) => ({
             .sort((a, b) => (b.rssi ?? -100) - (a.rssi ?? -100));
           set({ nearbyDevices: final });
           resolve(final);
-        }, 10000);
+        }, scanDuration);
       });
     } catch (error) {
       logger.error('BTStore', 'Error scanning for nearby devices', error);
@@ -214,27 +238,18 @@ export const useBtStore = create<BTState & BTActions>((set, get) => ({
   },
 
   startContinuousScanning: () => {
-    if (get().isScanning) return;
+    if (scanActive) return;
+    scanActive = true;
     set({ isScanning: true });
-
-    const scan = async () => {
-      try {
-        const devices = await get().scanForNearbyDevices();
-        await get().checkForMappedDevices(devices);
-      } catch (error) {
-        logger.error('BTStore', 'Error in continuous scanning', error);
-      }
-    };
-
-    scan();
-    scanInterval = setInterval(scan, 25000);
+    runScanCycle();
   },
 
   stopContinuousScanning: () => {
+    scanActive = false;
     set({ isScanning: false });
-    if (scanInterval) {
-      clearInterval(scanInterval);
-      scanInterval = null;
+    if (scanTimer) {
+      clearTimeout(scanTimer);
+      scanTimer = null;
     }
     if (songLoopInterval) {
       clearInterval(songLoopInterval);

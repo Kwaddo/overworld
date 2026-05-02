@@ -32,7 +32,7 @@ describe('loadMappingsWifiUtil', () => {
   });
 
   it('returns stored mappings as array', async () => {
-    mockStore['wifi_song_mappings'] = JSON.stringify({
+    mockStore.wifi_song_mappings = JSON.stringify({
       'aa:bb:cc': { songUri: 'file://song.mp3', songName: 'Song', wifiName: 'Home' },
     });
     const result = await loadMappingsWifiUtil();
@@ -51,7 +51,7 @@ describe('saveMappingWifiUtil', () => {
   it('saves a new mapping', async () => {
     const ok = await saveMappingWifiUtil('aa:bb:cc', 'Home', 'file://a.mp3', 'Track A');
     expect(ok).toBe(true);
-    const stored = JSON.parse(mockStore['wifi_song_mappings']);
+    const stored = JSON.parse(mockStore.wifi_song_mappings);
     expect(stored['aa:bb:cc']).toEqual({
       songUri: 'file://a.mp3',
       songName: 'Track A',
@@ -63,7 +63,7 @@ describe('saveMappingWifiUtil', () => {
   it('overwrites an existing mapping for the same BSSID', async () => {
     await saveMappingWifiUtil('aa:bb:cc', 'Home', 'file://a.mp3', 'Track A');
     await saveMappingWifiUtil('aa:bb:cc', 'Home', 'file://b.mp3', 'Track B');
-    const stored = JSON.parse(mockStore['wifi_song_mappings']);
+    const stored = JSON.parse(mockStore.wifi_song_mappings);
     expect(stored['aa:bb:cc'].songName).toBe('Track B');
   });
 });
@@ -73,7 +73,7 @@ describe('deleteMappingWifiUtil', () => {
     await saveMappingWifiUtil('aa:bb:cc', 'Home', 'file://a.mp3', 'Track A');
     const ok = await deleteMappingWifiUtil('aa:bb:cc');
     expect(ok).toBe(true);
-    const stored = JSON.parse(mockStore['wifi_song_mappings']);
+    const stored = JSON.parse(mockStore.wifi_song_mappings);
     expect(stored['aa:bb:cc']).toBeUndefined();
   });
 

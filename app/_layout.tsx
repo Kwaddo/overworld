@@ -12,6 +12,7 @@ import { STOP_ACTION_ID } from '@/lib/utils/notifications';
 // Must be imported at module level so TaskManager.defineTask runs before any background
 // task fires (including when the OS launches the app headlessly to run the task).
 import '@/lib/tasks/background-wifi';
+import '@/lib/utils/keepalive';
 import 'react-native-reanimated';
 
 // Registered at module level so the Stop button works even when no component is mounted.

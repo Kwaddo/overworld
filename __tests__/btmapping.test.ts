@@ -32,7 +32,7 @@ describe('loadMappingsBTUtil', () => {
   });
 
   it('returns stored mappings as array', async () => {
-    mockStore['bluetooth_song_mappings'] = JSON.stringify({
+    mockStore.bluetooth_song_mappings = JSON.stringify({
       'device-001': { name: 'My Phone', songUri: 'file://song.mp3', songName: 'Song' },
     });
     const result = await loadMappingsBTUtil();
@@ -51,7 +51,7 @@ describe('saveMappingBTUtil', () => {
   it('saves a new BT mapping', async () => {
     const ok = await saveMappingBTUtil('device-001', 'My Phone', 'file://a.mp3', 'Track A');
     expect(ok).toBe(true);
-    const stored = JSON.parse(mockStore['bluetooth_song_mappings']);
+    const stored = JSON.parse(mockStore.bluetooth_song_mappings);
     expect(stored['device-001']).toEqual({
       name: 'My Phone',
       songUri: 'file://a.mp3',
@@ -66,7 +66,7 @@ describe('deleteMappingBTUtil', () => {
     await saveMappingBTUtil('device-001', 'My Phone', 'file://a.mp3', 'Track A');
     const ok = await deleteMappingBTUtil('device-001');
     expect(ok).toBe(true);
-    const stored = JSON.parse(mockStore['bluetooth_song_mappings']);
+    const stored = JSON.parse(mockStore.bluetooth_song_mappings);
     expect(stored['device-001']).toBeUndefined();
   });
 });
