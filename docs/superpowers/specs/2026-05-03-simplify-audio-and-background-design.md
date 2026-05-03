@@ -53,7 +53,7 @@ The foreground service is still held open by `audioPlayer` always playing silenc
 
 Add `assets/audio/silence.wav` — 1 second mono PCM, ~5 KB, committed to the repo. Generated once via:
 
-```
+```sh
 ffmpeg -f lavfi -i anullsrc=r=8000:cl=mono -t 1 -c:a pcm_u8 assets/audio/silence.wav
 ```
 
@@ -168,7 +168,7 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
 
 The change to `package.json` deps and `app.json` plugins requires a fresh native build:
 
-```
+```sh
 bun run build:android:dev
 # or
 expo run:android
