@@ -16,32 +16,37 @@ Two complaints:
 
 ### Why complexity is excess
 
+- `contexts/wifisongmaps.provider.tsx` and `contexts/btsongmaps.provider.tsx` are **dead code** — never mounted by `app/_layout.tsx`, never imported anywhere. Active code lives in `lib/stores/wifi-store.ts` (Zustand), `lib/stores/bt-store.ts` (Zustand), and `lib/hooks/useInitStores.ts` (lifecycle wiring). The orphan provider files mislead anyone reading the codebase.
 - `lib/tasks/background-wifi.ts` registers an `expo-background-task` with a 15-minute minimum interval. That's only useful for case (D), which the user does not need; for cases (A/B/C) the foreground-service trick already handles things. The task is dead weight.
-- Permission requests are duplicated across `wifisongmaps.provider.tsx`, `btsongmaps.provider.tsx`, and `notifications.ts`. Each provider re-implements the same `PermissionsAndroid.request` pattern.
-- `btsongmaps.provider.tsx` has a `previousNearbyDevicesRef` that is assigned but never read, and a 3-minute `songLoopIntervalRef` that calls `playSound` with the same id while it's already playing — `controls.ts` early-returns on `currentlyPlaying.id === id`, so the interval does nothing.
-- `wifisongmaps.provider.tsx` requests `ACCESS_FINE_LOCATION` once at mount, then `getCurrentWifi` re-requests it (with the v33+ NEARBY_WIFI_DEVICES too) on every poll. The first call is redundant.
+- Permission requests are duplicated across `lib/stores/wifi-store.ts` (`ensureWifiPermissions`), `lib/stores/bt-store.ts` (`requestPermissions`), `lib/hooks/useInitStores.ts` (a bare `PermissionsAndroid.request(ACCESS_FINE_LOCATION)`), and `lib/utils/notifications.ts` (`requestNotificationPermission`). Each re-implements the same pattern.
+- `lib/stores/bt-store.ts` has a 3-minute `songLoopInterval` that calls `playSound` with the same id while it's already playing — `controls.ts` early-returns on `currentlyPlaying.id === id`, so the interval does nothing.
+- `useInitStores.ts` requests `ACCESS_FINE_LOCATION` once at the top of `setup()`, then `playSongForCurrentWifi(true)` calls `getCurrentWifi` which calls `ensureWifiPermissions` again. The first call is redundant.
 
 ## Goals
 
 - Eliminate the `FileSystem.writeAsStringAsync` call from the runtime path. No `expo-file-system` import in `controls.ts`.
 - Drop `expo-background-task` and its task file.
-- One module owns permission requests; providers consume from it.
-- Remove dead code in providers.
-- No regressions in the A/B/C scenarios. BT priority over WiFi is preserved. The 7s WiFi poll and 25s BT scan with 10s window are preserved.
+- One module owns permission requests; stores consume from it.
+- Delete dead Context provider files in `contexts/`.
+- Remove the no-op 3-minute song loop in the BT store.
+- No regressions in the A/B/C scenarios. BT priority over WiFi is preserved. The WiFi poll cadence and BT discovery/monitoring scan modes (10s/25s discovery, 3s/5s monitoring) are preserved.
 
 ## Non-goals
 
-- No unification of the WiFi and BT providers — they reflect genuinely different mechanisms (cheap synchronous WiFi reads vs slow async BT scans).
-- No state-machine rewrite, no Zustand restructure, no route changes.
+- No unification of WiFi and BT stores — they reflect genuinely different mechanisms (cheap synchronous WiFi reads vs slow async BT scans).
+- No state-machine rewrite, no Zustand restructure beyond removing the dead loop, no route changes.
 - No support for case (D) (app swipe-killed).
 - No notification format changes.
+- `lib/utils/backup.ts` also imports `expo-file-system/legacy`, but its calls only run on user-initiated backup/restore. Out of scope here. Tracked separately.
 
 ## Architecture
 
 Unchanged in shape:
 
-- `WiFiSongMappingProvider` — file-level singleton inside `app/_layout.tsx` tree; polls every 7s, plus reacts to `getCurrentWifi` calls from UI.
-- `BluetoothSongMappingProvider` — same tree; scans every 25s with a 10s window via `react-native-ble-plx`.
+- `lib/stores/wifi-store.ts` — Zustand store with WiFi mappings, current SSID/BSSID, `playSongForCurrentWifi`, `getCurrentWifi`. Active path.
+- `lib/stores/bt-store.ts` — Zustand store with BT mappings, nearby devices, scan modes, `currentPairedDevice`. Active path. Owns its own `BleManager` singleton.
+- `lib/hooks/useInitStores.ts` — wires both stores up at mount: NetInfo subscription, AppState subscription, 7s WiFi poll, BT continuous scanning, plus the BT `nearbyDevices` reaction effect.
+- `app/_layout.tsx` — renders `<StoreInitializer />` which calls `useInitStores()`. No providers.
 - `lib/utils/controls.ts` — module-level audio singleton (`createAudioPlayer()` once). Exposes `playSound`, `stopSound`, `isPlaying`, `getCurrentlyPlaying`, `hasBluetoothPriority`, `markManualStop`, `isManualStop`, `AUDIO_SOURCE_TYPES`.
 - `lib/utils/notifications.ts` — Now Playing notification with Stop action.
 
@@ -51,13 +56,7 @@ The foreground service is still held open by `audioPlayer` always playing silenc
 
 ### Bundled silence asset
 
-Add `assets/audio/silence.wav` — 1 second mono PCM, ~5 KB, committed to the repo. Generated once via:
-
-```sh
-ffmpeg -f lavfi -i anullsrc=r=8000:cl=mono -t 1 -c:a pcm_u8 assets/audio/silence.wav
-```
-
-(or any equivalent — bytes are the same). Committed to the repo; not regenerated at runtime.
+`assets/sounds/silence.mp3` already exists (293 bytes) — use it. No new file needed.
 
 In `controls.ts`:
 
@@ -66,7 +65,7 @@ In `controls.ts`:
 - `startSilence` becomes:
 
 ```ts
-const SILENCE_SOURCE = require('../../assets/audio/silence.wav');
+const SILENCE_SOURCE = require('../../assets/sounds/silence.mp3');
 
 const startSilence = (): void => {
   safe(() => audioPlayer.replace(SILENCE_SOURCE), 'replace(silence)');
@@ -83,7 +82,8 @@ const startSilence = (): void => {
 
 - Delete `lib/tasks/background-wifi.ts`.
 - Remove `import '@/lib/tasks/background-wifi';` from `app/_layout.tsx`.
-- Remove `expo-background-task` from `package.json` `dependencies`.
+- Remove `import { registerBackgroundWifiTask } from '../tasks/background-wifi';` from `lib/hooks/useInitStores.ts` and the `registerBackgroundWifiTask();` call inside its first `useEffect`.
+- Remove `expo-background-task` and `expo-task-manager` from `package.json` `dependencies` (`expo-task-manager` is only used by the deleted task).
 - Remove `"expo-background-task"` from `app.json` `plugins`.
 - Run `bun install` to update the lockfile.
 - The native rebuild is required (next section).
@@ -135,20 +135,37 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
 };
 ```
 
-`notifications.ts` no longer defines `requestNotificationPermission`. The function moves to `permissions.ts`. Implementation step grep's for `requestNotificationPermission` and updates each import site to point at `@/lib/utils/permissions`.
+`notifications.ts` no longer defines `requestNotificationPermission`. The function moves to `permissions.ts`. The single caller is `lib/hooks/useInitStores.ts` (line 14, line 30); update that import to `@/lib/utils/permissions`.
 
-### Provider cleanup
+### Store and hook cleanup
 
-`btsongmaps.provider.tsx`:
+`lib/stores/bt-store.ts`:
 
-- Delete `previousNearbyDevicesRef` (declaration + the line in `checkForDisconnectedDevices` that assigns it; it's never read).
-- Delete `songLoopIntervalRef`, the `setInterval(... 180000)` block in `checkForMappedDevices`, and the `clearInterval(songLoopIntervalRef.current)` calls in `stopContinuousScanning` and `deleteMapping`. The interval is a no-op given `controls.ts`'s id-based early return.
-- Replace the inline `requestPermissions` callback with `requestBluetoothPermissions` from `permissions.ts`. Update call sites inside `scanForNearbyDevices`.
+- Delete the module-level `let songLoopInterval: ReturnType<typeof setInterval> | null = null;`.
+- Delete the `setInterval(... 180000)` block in `checkForMappedDevices` (the `songLoopInterval = setInterval(...)` statement and its body).
+- Delete the `if (songLoopInterval) { clearInterval(songLoopInterval); songLoopInterval = null; }` blocks in `deleteMapping`, `checkForDisconnectedDevices`, and `stopContinuousScanning`.
+- Delete the inline `requestPermissions` async function. Replace its call site in `scanForNearbyDevices` with `requestBluetoothPermissions` imported from `permissions.ts`.
 
-`wifisongmaps.provider.tsx`:
+`lib/stores/wifi-store.ts`:
 
-- Replace the inline `ensureWifiPermissions` callback with `requestWifiPermissions` from `permissions.ts`. Update call sites inside `getCurrentWifi`.
-- In `setupWifiMonitoring`, drop the bare `PermissionsAndroid.request(ACCESS_FINE_LOCATION)` — the immediately-following `playSongForCurrentWifi(true)` triggers `getCurrentWifi`, which already requests permissions.
+- Delete the module-level `ensureWifiPermissions` async function. Replace its call site in `getCurrentWifi` with `requestWifiPermissions` imported from `permissions.ts`.
+
+`lib/hooks/useInitStores.ts`:
+
+- Delete the line `await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);` and the surrounding `if (Platform.OS === 'android')` guard at the top of `setup()`. The very next call (`playSongForCurrentWifi(true)`) triggers `getCurrentWifi`, which now calls `requestWifiPermissions`.
+- Drop the now-unused `PermissionsAndroid, Platform` from the `react-native` import.
+- Update the `requestNotificationPermission` import from `'../utils/notifications'` to `'../utils/permissions'`.
+
+### Dead code removal
+
+Delete the unused Context-based provider files entirely:
+
+- `contexts/wifisongmaps.provider.tsx`
+- `contexts/btsongmaps.provider.tsx`
+
+Verify with `grep -rn "useWifiSongMapping\|useBluetoothSongMapping\|WiFiSongMappingProvider\|BluetoothSongMappingProvider" app components lib` returning nothing before removal.
+
+If `contexts/` is empty after removal, delete the directory.
 
 ### app.json plugins
 
@@ -190,8 +207,8 @@ Manual, on the user's Android device:
 
 ## Risk and rollback
 
-- Risk 1: `audioPlayer.replace(require(...))` may need a different shape than a URI string. Verify with `expo-audio` docs — likely `replace({ uri: Asset.fromModule(...).uri })` or `replace(require(...))` directly. Implementation step writes a 5-line probe first.
-- Risk 2: removing `expo-background-task` from `package.json` without rebuilding leaves stale native code. Mitigated by requiring a fresh build before testing.
-- Risk 3: BT scan may behave differently without the no-op 3-min loop. Manual verification step (4) covers this.
+- Risk 1: `audioPlayer.replace(require(...))` may need a different shape than a URI string. The `expo-audio` `replace()` accepts a `require()`'d module asset directly (it implements `AudioSource` resolution). If the runtime balks, fall back to `replace({ uri: Asset.fromModule(require(...)).uri })`.
+- Risk 2: removing `expo-background-task` and `expo-task-manager` from `package.json` without rebuilding leaves stale native code. Mitigated by requiring a fresh build before testing.
+- Risk 3: BT scan may behave differently without the no-op 3-min loop. The manual verification step covers this.
 
-Rollback is `git revert` of the commit. The change is contained to `controls.ts`, the two providers, `notifications.ts`, `app/_layout.tsx`, `app.json`, `package.json`, `bun.lock`, plus the new `permissions.ts` and `assets/audio/silence.wav`, plus the deleted `lib/tasks/background-wifi.ts`.
+Rollback is `git revert` of the relevant commits. Files touched: `lib/utils/controls.ts`, `lib/stores/wifi-store.ts`, `lib/stores/bt-store.ts`, `lib/hooks/useInitStores.ts`, `lib/utils/notifications.ts`, `app/_layout.tsx`, `app.json`, `package.json`, `bun.lock`. New: `lib/utils/permissions.ts`. Deleted: `lib/tasks/background-wifi.ts`, `contexts/wifisongmaps.provider.tsx`, `contexts/btsongmaps.provider.tsx`.
