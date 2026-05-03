@@ -1,7 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
-import { Stack, useRouter } from 'expo-router';
+import { type Href, Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -40,7 +40,7 @@ const RootLayout = () => {
   useEffect(() => {
     if (loaded && isFirstLaunch === true && !hasRedirected.current) {
       hasRedirected.current = true;
-      router.replace('/setup');
+      router.replace('/setup' as Href);
     }
   }, [loaded, isFirstLaunch, router]);
 

@@ -1,7 +1,13 @@
 import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { PermissionsAndroid, Platform, ScrollView, StyleSheet } from 'react-native';
+import {
+  type Permission,
+  PermissionsAndroid,
+  Platform,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
 import { DoneStep } from '@/components/setup/done-step';
 import { ProgressDots } from '@/components/setup/progress-dots';
 import { StepCard } from '@/components/setup/step-card';
@@ -13,7 +19,7 @@ import { useFirstLaunch } from '@/lib/hooks/useFirstLaunch';
 type PermissionKey = 'location' | 'bluetooth' | 'notifications';
 type Statuses = Record<PermissionKey, PermissionStatus>;
 
-const requestAndroid = async (perms: string[]): Promise<boolean> => {
+const requestAndroid = async (perms: Permission[]): Promise<boolean> => {
   const results = await PermissionsAndroid.requestMultiple(perms);
   return perms.every(
     (p) => results[p as keyof typeof results] === PermissionsAndroid.RESULTS.GRANTED,
