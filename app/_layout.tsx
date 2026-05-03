@@ -1,11 +1,13 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect, useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { useColorScheme } from '@/lib/hooks/useColorScheme';
+import { useFirstLaunch } from '@/lib/hooks/useFirstLaunch';
 import { useInitStores } from '@/lib/hooks/useInitStores';
 import { stopSound } from '@/lib/utils/controls';
 import { STOP_ACTION_ID } from '@/lib/utils/notifications';
@@ -28,11 +30,21 @@ const StoreInitializer = () => {
 
 const RootLayout = () => {
   const colorScheme = useColorScheme();
+  const router = useRouter();
   const [loaded] = useFonts({
     NintendoDSBIOS: require('../assets/fonts/Nintendo-DS-BIOS.ttf'),
   });
+  const { isFirstLaunch } = useFirstLaunch();
+  const hasRedirected = useRef(false);
 
-  if (!loaded) {
+  useEffect(() => {
+    if (loaded && isFirstLaunch === true && !hasRedirected.current) {
+      hasRedirected.current = true;
+      router.replace('/setup');
+    }
+  }, [loaded, isFirstLaunch, router]);
+
+  if (!loaded || isFirstLaunch === null) {
     return null;
   }
 
@@ -43,6 +55,7 @@ const RootLayout = () => {
           <StoreInitializer />
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="setup" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack>
           <StatusBar style="auto" />
