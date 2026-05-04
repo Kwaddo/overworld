@@ -47,6 +47,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: LightColors.primary,
     gap: 8,
+    shadowColor: LightColors.cardShadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
   },
   note: {
     fontSize: 14,

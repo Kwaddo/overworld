@@ -26,7 +26,7 @@ import {
   getMappingByBSSID,
   loadMappingsWifiUtil,
   saveMappingWifiUtil,
-} from '../lib/utils/wiifmapping';
+} from '../lib/utils/wifimapping';
 
 const WiFiSongMappingContext = createContext<SongMappingContextType | undefined>(undefined);
 

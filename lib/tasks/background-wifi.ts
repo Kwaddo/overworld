@@ -9,7 +9,7 @@ import {
   stopSound,
 } from '../utils/controls';
 import { logger } from '../utils/logger';
-import { loadMappingsWifiUtil } from '../utils/wiifmapping';
+import { loadMappingsWifiUtil } from '../utils/wifimapping';
 
 export const BACKGROUND_WIFI_TASK = 'overworld-background-wifi';
 

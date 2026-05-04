@@ -11,7 +11,7 @@ import {
   loadMappingsWifiUtil,
   saveMappingWifiUtil,
   updateVolumeWifiUtil,
-} from '../utils/wiifmapping';
+} from '../utils/wifimapping';
 
 // Module-level refs (store is a singleton)
 let previousWifi: { ssid: string | null; bssid: string | null } = { ssid: null, bssid: null };

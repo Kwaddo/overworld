@@ -9,8 +9,7 @@ interface PolkaDotBackgroundProps {
 
 export const PolkaDotBackground: FC<PolkaDotBackgroundProps> = ({ style, children }) => {
   const [layout, setLayout] = useState({ width: 0, height: 0 });
-  const dotSize = 4;
-  const spacing = 50;
+  const spacing = 44;
   const dotColor = LightColors.primary;
 
   const renderDots = () => {
@@ -19,8 +18,12 @@ export const PolkaDotBackground: FC<PolkaDotBackgroundProps> = ({ style, childre
     const cols = Math.ceil(layout.width / spacing) + 1;
 
     for (let i = 0; i < rows; i++) {
+      const isPrimary = i % 2 === 0;
+      const dotSize = isPrimary ? 5 : 3;
+      const opacity = isPrimary ? 0.65 : 0.35;
+      const offsetX = isPrimary ? 0 : spacing / 2;
+
       for (let j = 0; j < cols; j++) {
-        const offsetX = i % 2 === 0 ? 0 : spacing / 2;
         dots.push(
           <View
             key={`${i}-${j}`}
@@ -33,6 +36,7 @@ export const PolkaDotBackground: FC<PolkaDotBackgroundProps> = ({ style, childre
                 backgroundColor: dotColor,
                 left: j * spacing + offsetX,
                 top: i * spacing,
+                opacity,
               },
             ]}
           />,
@@ -64,6 +68,5 @@ const styles = StyleSheet.create({
   },
   dot: {
     position: 'absolute',
-    opacity: 0.7,
   },
 });

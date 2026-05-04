@@ -2,7 +2,7 @@
   "expo": {
     "name": "Overworld",
     "slug": "overworld",
-    "version": "1.0.0",
+    "version": "0.1.14",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "overworld",
@@ -11,11 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": [
-          "audio",
-          "fetch",
-          "bluetooth-central"
-        ],
+        "UIBackgroundModes": ["audio", "fetch", "bluetooth-central"],
         "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect to nearby devices",
         "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to connect to nearby devices"
       },

@@ -63,9 +63,36 @@ export const importMappings = async (): Promise<{ wifi: number; bluetooth: numbe
     if (
       payload.version !== 1 ||
       typeof payload.wifi !== 'object' ||
-      typeof payload.bluetooth !== 'object'
+      payload.wifi === null ||
+      typeof payload.bluetooth !== 'object' ||
+      payload.bluetooth === null
     ) {
       throw new Error('Invalid backup file format');
+    }
+
+    const isValidWifiEntry = (v: unknown): boolean => {
+      if (typeof v !== 'object' || v === null) return false;
+      const e = v as Record<string, unknown>;
+      return (
+        typeof e.songUri === 'string' &&
+        typeof e.songName === 'string' &&
+        typeof e.wifiName === 'string'
+      );
+    };
+    const isValidBtEntry = (v: unknown): boolean => {
+      if (typeof v !== 'object' || v === null) return false;
+      const e = v as Record<string, unknown>;
+      return (
+        typeof e.songUri === 'string' &&
+        typeof e.songName === 'string' &&
+        typeof e.name === 'string'
+      );
+    };
+
+    const wifiInvalid = Object.values(payload.wifi).some((v) => !isValidWifiEntry(v));
+    const btInvalid = Object.values(payload.bluetooth).some((v) => !isValidBtEntry(v));
+    if (wifiInvalid || btInvalid) {
+      throw new Error('Backup contains malformed entries');
     }
 
     await Promise.all([

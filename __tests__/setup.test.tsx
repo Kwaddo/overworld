@@ -9,7 +9,7 @@ jest.mock('expo-secure-store', () => ({
 }));
 jest.mock('expo-notifications', () => ({ requestPermissionsAsync: jest.fn() }));
 
-import SetupScreen from '../setup';
+import SetupScreen from '@/app/setup';
 
 // Platform defaults to iOS in jest-expo — permission steps auto-grant and advance,
 // which is sufficient to verify the entire step flow and navigation logic.

@@ -1,6 +1,6 @@
 import NetInfo from '@react-native-community/netinfo';
 import { useEffect } from 'react';
-import { AppState, PermissionsAndroid, Platform } from 'react-native';
+import { AppState } from 'react-native';
 import { useBtStore } from '../stores/bt-store';
 import { useWifiStore } from '../stores/wifi-store';
 import { registerBackgroundWifiTask } from '../tasks/background-wifi';
@@ -33,11 +33,10 @@ export const useInitStores = () => {
 
   // WiFi: netinfo event-driven + 7s polling fallback
   useEffect(() => {
-    const setup = async () => {
-      if (Platform.OS === 'android') {
-        await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
-      }
+    let mounted = true;
+    let cleanup: (() => void) | undefined;
 
+    const setup = async () => {
       // Play on first load
       const timeout = setTimeout(() => playSongForCurrentWifi(true), 1000);
 
@@ -84,12 +83,18 @@ export const useInitStores = () => {
       };
     };
 
-    let cleanup: (() => void) | undefined;
     setup().then((fn) => {
-      cleanup = fn;
+      if (mounted) {
+        cleanup = fn;
+      } else {
+        fn();
+      }
     });
 
-    return () => cleanup?.();
+    return () => {
+      mounted = false;
+      cleanup?.();
+    };
   }, [playSongForCurrentWifi]);
 
   // BT: start/stop scanning

@@ -53,7 +53,7 @@ const BluetoothList: FC<BluetoothListProps> = ({ devices, mappings }) => {
     }
   };
 
-  const handleDelete = async (device: Device) => {
+  const handleDelete = (device: Device) => {
     const mapping = getMappingForDevice(device.id);
     if (!mapping) return;
     Alert.alert('Delete Mapping', `Remove the song for "${device.name ?? device.id}"?`, [
@@ -188,6 +188,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: LightColors.textPrimary,
     fontFamily: 'NintendoDSBIOS',
+    borderWidth: 1.5,
+    borderColor: LightColors.cardBorder,
+    shadowColor: LightColors.cardShadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
   },
   deviceItem: {
     backgroundColor: LightColors.cardBackground,
@@ -197,6 +204,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    borderWidth: 1,
+    borderColor: LightColors.cardBorder,
+    borderTopWidth: 2,
+    borderTopColor: LightColors.cardHighlight,
+    shadowColor: LightColors.cardShadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 5,
   },
   deviceInfo: {
     flex: 1,
@@ -237,6 +253,13 @@ const styles = StyleSheet.create({
     backgroundColor: LightColors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 245, 200, 0.5)',
+    shadowColor: LightColors.cardShadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   volumeBtnText: {
     color: LightColors.textLight,
@@ -263,9 +286,36 @@ const styles = StyleSheet.create({
     minWidth: 55,
     alignItems: 'center',
   },
-  addButton: { backgroundColor: LightColors.primary },
-  testButton: { backgroundColor: LightColors.tertiary },
-  deleteButton: { backgroundColor: LightColors.secondary },
+  addButton: {
+    backgroundColor: LightColors.primary,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 245, 200, 0.5)',
+    shadowColor: LightColors.cardShadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.22,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  testButton: {
+    backgroundColor: LightColors.tertiary,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 245, 200, 0.5)',
+    shadowColor: LightColors.cardShadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.22,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  deleteButton: {
+    backgroundColor: LightColors.secondary,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 200, 180, 0.4)',
+    shadowColor: '#5a1000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.22,
+    shadowRadius: 3,
+    elevation: 3,
+  },
   actionButtonText: {
     color: LightColors.textLight,
     fontWeight: '600',

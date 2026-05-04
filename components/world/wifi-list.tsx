@@ -28,10 +28,14 @@ const WifiList: FC<WifiListProps> = ({ mappings }) => {
     );
   }, [mappings, query]);
 
-  const handleDelete = async (item: WifiSongMapping) => {
+  const handleDelete = (item: WifiSongMapping) => {
     Alert.alert('Delete Mapping', `Remove the song for "${item.wifiName}"?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteMapping(item.bssid) },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => deleteMapping(item.bssid),
+      },
     ]);
   };
 
@@ -90,7 +94,10 @@ const WifiList: FC<WifiListProps> = ({ mappings }) => {
                   onPress={() =>
                     Alert.alert('Test Song', `Play "${parseSongTitle(item.songName)}"?`, [
                       { text: 'Cancel' },
-                      { text: 'Play', onPress: () => testMapping(item.bssid) },
+                      {
+                        text: 'Play',
+                        onPress: () => testMapping(item.bssid),
+                      },
                     ])
                   }
                 >
@@ -133,12 +140,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: LightColors.textPrimary,
     fontFamily: 'NintendoDSBIOS',
+    borderWidth: 1.5,
+    borderColor: LightColors.cardBorder,
+    shadowColor: LightColors.cardShadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
   },
   mappingItem: {
     backgroundColor: LightColors.cardBackground,
     borderRadius: 8,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: LightColors.cardBorder,
+    borderTopWidth: 2,
+    borderTopColor: LightColors.cardHighlight,
+    shadowColor: LightColors.cardShadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 5,
   },
   networkName: {
     fontSize: 28,
@@ -168,6 +191,13 @@ const styles = StyleSheet.create({
     backgroundColor: LightColors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 245, 200, 0.5)',
+    shadowColor: LightColors.cardShadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   volumeBtnText: {
     color: LightColors.textLight,
@@ -192,9 +222,23 @@ const styles = StyleSheet.create({
   },
   playButton: {
     backgroundColor: LightColors.primary,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 245, 200, 0.5)',
+    shadowColor: LightColors.cardShadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.22,
+    shadowRadius: 3,
+    elevation: 3,
   },
   deleteButton: {
     backgroundColor: LightColors.secondary,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 200, 180, 0.4)',
+    shadowColor: '#5a1000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.22,
+    shadowRadius: 3,
+    elevation: 3,
   },
   actionButtonText: {
     color: LightColors.textLight,
