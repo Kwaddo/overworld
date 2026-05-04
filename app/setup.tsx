@@ -70,6 +70,17 @@ const SetupScreen = () => {
   };
 
   const requestNotifications = async () => {
+    if (Platform.OS === 'android' && Platform.Version >= 33) {
+      const result = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      );
+      setStatus(
+        'notifications',
+        result === PermissionsAndroid.RESULTS.GRANTED ? 'granted' : 'denied',
+      );
+      advance();
+      return;
+    }
     const { status } = await Notifications.requestPermissionsAsync();
     setStatus('notifications', status === 'granted' ? 'granted' : 'denied');
     advance();

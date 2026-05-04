@@ -3,7 +3,13 @@ import { type Permission, PermissionsAndroid, Platform } from 'react-native';
 import WifiManager from 'react-native-wifi-reborn';
 import { create } from 'zustand';
 import type { WifiSongMapping } from '../types/wifi';
-import { AUDIO_SOURCE_TYPES, hasBluetoothPriority, playSound, stopSound } from '../utils/controls';
+import {
+  AUDIO_SOURCE_TYPES,
+  hasBluetoothPriority,
+  isPlaying,
+  playSound,
+  stopSound,
+} from '../utils/controls';
 import { logger } from '../utils/logger';
 import {
   deleteMappingWifiUtil,
@@ -23,10 +29,10 @@ const ensureWifiPermissions = async (): Promise<boolean> => {
     PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
     Platform.Version >= 33 ? PermissionsAndroid.PERMISSIONS.NEARBY_WIFI_DEVICES : undefined,
   ];
-  const toRequest = permissions.filter(Boolean) as Permission[];
-  if (!toRequest.length) return true;
-  const result = await PermissionsAndroid.requestMultiple(toRequest);
-  return toRequest.every((perm) => result[perm] === PermissionsAndroid.RESULTS.GRANTED);
+  const toCheck = permissions.filter(Boolean) as Permission[];
+  if (!toCheck.length) return true;
+  const results = await Promise.all(toCheck.map((p) => PermissionsAndroid.check(p)));
+  return results.every(Boolean);
 };
 
 interface WiFiState {
@@ -72,8 +78,7 @@ export const useWifiStore = create<WiFiState & WiFiActions>((set, get) => ({
   },
 
   deleteMapping: async (bssid) => {
-    const { currentWifi } = get();
-    if (currentWifi.bssid === bssid) await stopSound();
+    if (isPlaying(bssid)) await stopSound();
     const result = await deleteMappingWifiUtil(bssid);
     if (result) await get().loadMappings();
     return result;

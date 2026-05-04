@@ -9,7 +9,7 @@ import {
   saveMappingBTUtil,
   updateVolumeBTUtil,
 } from '../utils/btmapping';
-import { AUDIO_SOURCE_TYPES, playSound, stopSound } from '../utils/controls';
+import { AUDIO_SOURCE_TYPES, isPlaying, playSound, stopSound } from '../utils/controls';
 import { logger } from '../utils/logger';
 
 const bleManager = new BleManager();
@@ -43,14 +43,14 @@ async function runScanCycle(): Promise<void> {
   }
 }
 
-const requestPermissions = async (): Promise<boolean> => {
+const checkPermissions = async (): Promise<boolean> => {
   if (Platform.OS === 'android') {
     const results = await Promise.all([
-      PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN),
-      PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT),
-      PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION),
+      PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN),
+      PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT),
+      PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION),
     ]);
-    return results.every((r) => r === PermissionsAndroid.RESULTS.GRANTED);
+    return results.every(Boolean);
   }
   return true;
 };
@@ -100,8 +100,7 @@ export const useBtStore = create<BTState & BTActions>((set, get) => ({
 
   deleteMapping: async (id) => {
     try {
-      const { currentPairedDevice } = get();
-      if (currentPairedDevice?.id === id) {
+      if (isPlaying(id)) {
         await stopSound();
         if (songLoopInterval) {
           clearInterval(songLoopInterval);
@@ -144,7 +143,7 @@ export const useBtStore = create<BTState & BTActions>((set, get) => ({
 
   scanForNearbyDevices: async (scanDuration = 10_000) => {
     try {
-      const hasPerms = await requestPermissions();
+      const hasPerms = await checkPermissions();
       if (!hasPerms) return [];
 
       const btState = await bleManager.state();

@@ -43,73 +43,79 @@ const InfoScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <DSText style={styles.appName}>OVERWORLD</DSText>
-          <DSText style={styles.tagline}>Location-triggered music player</DSText>
+          <DSText style={styles.title}>OVERWORLD</DSText>
+          <DSText style={styles.subtitle}>Location-triggered music player</DSText>
         </View>
 
-        <View style={styles.card}>
-          <DSText style={styles.cardTitle}>Backup & Restore</DSText>
-          <DSText style={styles.cardDesc}>
-            Save your WiFi and Bluetooth mappings to a file, or restore from a previous backup.
-          </DSText>
-          <View style={styles.btnRow}>
-            <TouchableOpacity style={[styles.btn, styles.btnExport]} onPress={handleExport}>
-              <DSText style={styles.btnText}>↑ Export</DSText>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.btn, styles.btnImport]} onPress={handleImport}>
-              <DSText style={styles.btnText}>↓ Import</DSText>
-            </TouchableOpacity>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionDot} />
+            <DSText style={styles.sectionTitle}>Backup & Restore</DSText>
+          </View>
+          <View style={styles.card}>
+            <DSText style={styles.cardDesc}>
+              Save your WiFi and Bluetooth mappings to a file, or restore from a previous backup.
+            </DSText>
+            <View style={styles.btnRow}>
+              <TouchableOpacity style={[styles.btn, styles.btnExport]} onPress={handleExport}>
+                <DSText style={styles.btnText}>Export</DSText>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.btn, styles.btnImport]} onPress={handleImport}>
+                <DSText style={styles.btnText}>Import</DSText>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
-        <DSText style={styles.groupLabel}>HOW IT WORKS</DSText>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionDot} />
+            <DSText style={styles.sectionTitle}>How it works</DSText>
+          </View>
 
-        <View style={styles.featureCard}>
-          <DSText style={styles.featureIcon}>🌍</DSText>
-          <View style={styles.featureBody}>
-            <DSText style={styles.featureName}>WiFi Mappings</DSText>
-            <DSText style={styles.featureDesc}>
-              Connect to a network, tap &quot;Map Song to This Network&quot;, and pick an audio
-              file. That song plays automatically every time you join that network.
+          <View style={styles.card}>
+            <DSText style={styles.cardTitle}>WiFi Mappings</DSText>
+            <DSText style={styles.cardBody}>
+              Connect to a network, tap "Map Song to This Network", and pick an audio file. That
+              song plays automatically every time you join that network.
             </DSText>
           </View>
-        </View>
 
-        <View style={styles.featureCard}>
-          <DSText style={styles.featureIcon}>📱</DSText>
-          <View style={styles.featureBody}>
-            <DSText style={styles.featureName}>BT Encounters</DSText>
-            <DSText style={styles.featureDesc}>
+          <View style={styles.card}>
+            <DSText style={styles.cardTitle}>BT Encounters</DSText>
+            <DSText style={styles.cardBody}>
               The app scans for nearby BLE devices and plays their mapped song when detected.
               Bluetooth always takes priority over WiFi.
             </DSText>
           </View>
-        </View>
 
-        <View style={[styles.featureCard, styles.noticeCard]}>
-          <DSText style={styles.featureIcon}>📍</DSText>
-          <View style={styles.featureBody}>
-            <DSText style={styles.featureName}>Location Required</DSText>
-            <DSText style={styles.featureDesc}>
+          <View style={[styles.card, styles.noticeCard]}>
+            <View style={styles.noticeHeader}>
+              <DSText style={styles.noticeTag}>Important</DSText>
+              <DSText style={styles.cardTitle}>Location Required</DSText>
+            </View>
+            <DSText style={styles.cardBody}>
               Android needs location access to read your WiFi network name and scan for Bluetooth
               devices. If auto-play stops, check that location is on and permission is granted.
             </DSText>
           </View>
         </View>
 
-        <DSText style={styles.groupLabel}>TIPS</DSText>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionDot} />
+            <DSText style={styles.sectionTitle}>Tips</DSText>
+          </View>
 
-        <View style={styles.card}>
-          {TIPS.map((tip, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: static list, no reorder
-            <View key={i} style={[styles.tipRow, i < TIPS.length - 1 && styles.tipDivider]}>
-              <DSText style={styles.tipBullet}>▸</DSText>
-              <DSText style={styles.tipText}>{tip}</DSText>
-            </View>
-          ))}
+          <View style={styles.card}>
+            {TIPS.map((tip, i) => (
+              <View key={tip} style={[styles.tipRow, i < TIPS.length - 1 && styles.tipDivider]}>
+                <DSText style={styles.tipBullet}>▸</DSText>
+                <DSText style={styles.tipText}>{tip}</DSText>
+              </View>
+            ))}
+          </View>
         </View>
-
-        <View style={styles.footer} />
       </ScrollView>
     </PolkaDotBackground>
   );
@@ -121,49 +127,112 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 40,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 8,
+    marginTop: 24,
+    marginBottom: 16,
   },
-  appName: {
-    fontSize: 34,
+  title: {
+    fontSize: 32,
     color: LightColors.textPrimary,
-    letterSpacing: 4,
+    letterSpacing: 3,
+    textAlign: 'center',
   },
-  tagline: {
-    fontSize: 14,
+  subtitle: {
+    fontSize: 16,
     color: LightColors.textSecondary,
+    textAlign: 'center',
     marginTop: 4,
+  },
+  section: {
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+    paddingLeft: 2,
+  },
+  sectionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: LightColors.primary,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    color: LightColors.textPrimary,
+    letterSpacing: 1,
   },
   card: {
     backgroundColor: LightColors.cardBackground,
-    borderRadius: 14,
+    borderRadius: 8,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: LightColors.cardBorder,
+    borderTopWidth: 2,
+    borderTopColor: LightColors.cardHighlight,
+    shadowColor: LightColors.cardShadow,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 7,
+  },
+  noticeCard: {
+    borderTopColor: LightColors.secondary,
   },
   cardTitle: {
-    fontSize: 22,
+    fontSize: 20,
     color: LightColors.textPrimary,
     marginBottom: 6,
   },
   cardDesc: {
-    fontSize: 15,
+    fontSize: 16,
     color: LightColors.textSecondary,
     lineHeight: 22,
     marginBottom: 14,
   },
+  cardBody: {
+    fontSize: 16,
+    color: LightColors.textSecondary,
+    lineHeight: 22,
+  },
+  noticeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  noticeTag: {
+    backgroundColor: LightColors.secondary,
+    color: '#fff',
+    fontSize: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
   btnRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
   },
   btn: {
     flex: 1,
-    borderRadius: 10,
-    paddingVertical: 13,
+    borderRadius: 8,
+    paddingVertical: 12,
     alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 245, 200, 0.5)',
+    shadowColor: LightColors.cardShadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
   btnExport: {
     backgroundColor: LightColors.primary,
@@ -172,46 +241,8 @@ const styles = StyleSheet.create({
     backgroundColor: LightColors.tertiary,
   },
   btnText: {
-    color: '#000',
+    color: LightColors.textLight,
     fontSize: 18,
-  },
-  groupLabel: {
-    fontSize: 12,
-    color: LightColors.textSecondary,
-    letterSpacing: 2,
-    marginBottom: 8,
-    marginTop: 4,
-    paddingLeft: 4,
-  },
-  featureCard: {
-    backgroundColor: LightColors.cardBackground,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 10,
-    flexDirection: 'row',
-    gap: 14,
-    alignItems: 'flex-start',
-  },
-  noticeCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: LightColors.secondary,
-  },
-  featureIcon: {
-    fontSize: 28,
-    marginTop: 2,
-  },
-  featureBody: {
-    flex: 1,
-  },
-  featureName: {
-    fontSize: 20,
-    color: LightColors.textPrimary,
-    marginBottom: 6,
-  },
-  featureDesc: {
-    fontSize: 15,
-    color: LightColors.textSecondary,
-    lineHeight: 22,
   },
   tipRow: {
     flexDirection: 'row',
@@ -230,12 +261,9 @@ const styles = StyleSheet.create({
   },
   tipText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
     color: LightColors.textPrimary,
     lineHeight: 22,
-  },
-  footer: {
-    height: 16,
   },
 });
 

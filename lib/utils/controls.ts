@@ -1,5 +1,4 @@
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
-import * as FileSystem from 'expo-file-system/legacy';
 import { AppState } from 'react-native';
 import { logger } from './logger';
 import { dismissNowPlayingNotification, showNowPlayingNotification } from './notifications';
@@ -17,7 +16,12 @@ import { dismissNowPlayingNotification, showNowPlayingNotification } from './not
 // every subsequent replace()/play() operating on a dead reference.
 const audioPlayer = createAudioPlayer();
 
-let silenceUri: string | null = null;
+// Bundled 1-second silent WAV (8 kHz, 8-bit, mono). Using a static asset
+// avoids any expo-file-system writes and the native class resolution issues
+// that can affect the legacy FileSystem API across dev-build version mismatches.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const SILENCE_SOURCE = require('../../assets/audio/silence.wav') as number;
+
 let primed = false;
 let primingPromise: Promise<void> | null = null;
 
@@ -51,41 +55,6 @@ const pickSilenceTitle = (): string => {
   return next;
 };
 
-const buildSilentWav = (): Uint8Array => {
-  const sampleRate = 8000;
-  const numSamples = sampleRate;
-  const buf = new Uint8Array(44 + numSamples);
-  const dv = new DataView(buf.buffer);
-  buf.set([82, 73, 70, 70], 0); // RIFF
-  dv.setUint32(4, 36 + numSamples, true);
-  buf.set([87, 65, 86, 69], 8); // WAVE
-  buf.set([102, 109, 116, 32], 12); // fmt
-  dv.setUint32(16, 16, true);
-  dv.setUint16(20, 1, true);
-  dv.setUint16(22, 1, true);
-  dv.setUint32(24, sampleRate, true);
-  dv.setUint32(28, sampleRate, true);
-  dv.setUint16(32, 1, true);
-  dv.setUint16(34, 8, true);
-  buf.set([100, 97, 116, 97], 36); // data
-  dv.setUint32(40, numSamples, true);
-  buf.fill(128, 44);
-  return buf;
-};
-
-const ensureSilenceFile = async (): Promise<string> => {
-  if (silenceUri) return silenceUri;
-  const path = `${FileSystem.cacheDirectory}overworld_silence.wav`;
-  const wav = buildSilentWav();
-  let latin1 = '';
-  for (let i = 0; i < wav.length; i++) latin1 += String.fromCharCode(wav[i]);
-  await FileSystem.writeAsStringAsync(path, btoa(latin1), {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-  silenceUri = path;
-  return path;
-};
-
 // Each native call individually try/caught — a single failed setter must
 // not abort the whole play/stop flow.
 const safe = <T>(fn: () => T, label: string): T | undefined => {
@@ -97,11 +66,10 @@ const safe = <T>(fn: () => T, label: string): T | undefined => {
   }
 };
 
-const startSilence = async (): Promise<void> => {
-  const uri = await ensureSilenceFile();
+const startSilence = (): void => {
   const title = pickSilenceTitle();
   safe(() => {
-    audioPlayer.replace({ uri });
+    audioPlayer.replace(SILENCE_SOURCE);
   }, 'replace(silence)');
   safe(() => {
     audioPlayer.loop = true;
@@ -141,7 +109,7 @@ const ensurePrimed = async (): Promise<void> => {
           artist: SILENCE_ARTIST,
         });
       }, 'setActiveForLockScreen');
-      await startSilence();
+      startSilence();
       primed = true;
     } catch (e) {
       logger.warn('AudioControls', 'Could not prime audio player', e);
@@ -201,7 +169,7 @@ export const stopSound = async (): Promise<void> => {
     dismissNowPlayingNotification();
 
     if (!wasPlaying) return;
-    await startSilence();
+    startSilence();
   } catch (error) {
     logger.error('AudioControls', 'Error stopping sound', error);
     currentlyPlaying.isPlaying = false;

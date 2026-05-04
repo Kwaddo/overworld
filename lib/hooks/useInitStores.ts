@@ -11,7 +11,6 @@ import {
   stopSound,
 } from '../utils/controls';
 import { logger } from '../utils/logger';
-import { requestNotificationPermission } from '../utils/notifications';
 
 export const useInitStores = () => {
   const loadWifiMappings = useWifiStore((s) => s.loadMappings);
@@ -23,11 +22,10 @@ export const useInitStores = () => {
   const checkForDisconnectedDevices = useBtStore((s) => s.checkForDisconnectedDevices);
   const nearbyDevices = useBtStore((s) => s.nearbyDevices);
 
-  // Load initial data + request notification permission + register background task
+  // Load initial data + register background task
   useEffect(() => {
     loadWifiMappings();
     loadBtMappings();
-    requestNotificationPermission();
     registerBackgroundWifiTask();
   }, [loadWifiMappings, loadBtMappings]);
 
