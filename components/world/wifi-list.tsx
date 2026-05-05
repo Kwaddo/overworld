@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { type FC, useMemo, useState } from 'react';
 import { Alert, FlatList, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -77,7 +78,7 @@ const WifiList: FC<WifiListProps> = ({ mappings }) => {
                   onPress={() => handleVolumeChange(item, -VOLUME_STEP)}
                   disabled={item.volume <= 0}
                 >
-                  <DSText style={styles.volumeBtnText}>−</DSText>
+                  <Ionicons name="remove" size={18} color={LightColors.textLight} />
                 </TouchableOpacity>
                 <DSText style={styles.volumeValue}>{Math.round(item.volume * 100)}%</DSText>
                 <TouchableOpacity
@@ -85,7 +86,7 @@ const WifiList: FC<WifiListProps> = ({ mappings }) => {
                   onPress={() => handleVolumeChange(item, VOLUME_STEP)}
                   disabled={item.volume >= 1}
                 >
-                  <DSText style={styles.volumeBtnText}>+</DSText>
+                  <Ionicons name="add" size={18} color={LightColors.textLight} />
                 </TouchableOpacity>
               </View>
               <View style={styles.actionButtons}>
@@ -198,11 +199,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
-  },
-  volumeBtnText: {
-    color: LightColors.textLight,
-    fontSize: 18,
-    lineHeight: 22,
   },
   volumeValue: {
     fontSize: 14,

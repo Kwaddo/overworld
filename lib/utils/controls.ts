@@ -1,4 +1,4 @@
-import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import { type AudioStatus, createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { AppState } from 'react-native';
 import { logger } from './logger';
 import { dismissNowPlayingNotification, showNowPlayingNotification } from './notifications';
@@ -156,6 +156,25 @@ AppState.addEventListener('change', (state) => {
 
 // Boot the foreground service immediately at module load.
 ensurePrimed();
+
+// When a non-looping song finishes, reset our tracking state and restart the
+// silent loop. Without this, currentlyPlaying.isPlaying stays true forever after
+// the song ends, causing playSound's idempotency guard to skip every subsequent
+// attempt to replay — the network is "forgotten" until a force-play is triggered.
+audioPlayer.addListener('playbackStatusUpdate', (status: AudioStatus) => {
+  if (status.didJustFinish && currentlyPlaying.isPlaying) {
+    currentlyPlaying.isPlaying = false;
+    currentlyPlaying.id = null;
+    currentlyPlaying.songName = null;
+    currentlyPlaying.networkName = null;
+    dismissNowPlayingNotification();
+    startSilence();
+  }
+});
+
+// Exported so callers that depend on the foreground service being alive (e.g. BLE scanning)
+// can await it before proceeding. Safe to call multiple times — idempotent.
+export const waitForAudioReady = (): Promise<void> => ensurePrimed();
 
 export const stopSound = async (): Promise<void> => {
   try {

@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 import BluetoothList from '@/components/encounters/bluetooth-list';
 import DSText from '@/components/ui/ds-text';
+import { NowPlayingBar } from '@/components/ui/now-playing-bar';
 import { PolkaDotBackground } from '@/components/ui/polka-dot-background';
 import { LightColors } from '@/constants/Colors';
 import { useBtStore } from '@/lib/stores/bt-store';
@@ -19,13 +20,16 @@ const EncountersScreen = () => {
   );
 
   return (
-    <PolkaDotBackground>
-      <View style={styles.container}>
-        <DSText style={styles.title}>Nearby Phone Encounters</DSText>
-        <DSText style={styles.subtitle}>Scanning for phones within 5m radius</DSText>
-        <BluetoothList devices={nearbyDevices} mappings={mappings} />
-      </View>
-    </PolkaDotBackground>
+    <>
+      <NowPlayingBar />
+      <PolkaDotBackground>
+        <View style={styles.container}>
+          <DSText style={styles.title}>Nearby Phone Encounters</DSText>
+          <DSText style={styles.subtitle}>Scanning for phones within 20m radius</DSText>
+          <BluetoothList devices={nearbyDevices} mappings={mappings} />
+        </View>
+      </PolkaDotBackground>
+    </>
   );
 };
 

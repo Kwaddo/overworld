@@ -2,7 +2,7 @@
   "expo": {
     "name": "Overworld",
     "slug": "overworld",
-    "version": "0.1.14",
+    "version": "0.1.15",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "overworld",
@@ -25,6 +25,7 @@
       "permissions": [
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE",
         "android.permission.WAKE_LOCK",
         "android.permission.ACCESS_WIFI_STATE",
         "android.permission.ACCESS_NETWORK_STATE",
@@ -62,7 +63,16 @@
       "expo-audio",
       "expo-asset",
       "expo-notifications",
-      "expo-background-task"
+      "expo-background-task",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": true,
+          "modes": ["central"],
+          "bluetoothAlwaysPermission": "Overworld uses Bluetooth to detect nearby devices and play mapped songs"
+        }
+      ],
+      "./plugins/withBleConnectedDeviceService"
     ],
     "experiments": {
       "typedRoutes": true

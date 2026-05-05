@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LightColors } from '@/constants/Colors';
 import { getCurrentlyPlaying, stopSound } from '@/lib/utils/controls';
 import { parseSongTitle } from '@/lib/utils/songTitle';
@@ -17,7 +16,6 @@ const useNowPlayingPoll = () => {
 
 export const NowPlayingBar = () => {
   const { id, isPlaying, songName, networkName } = useNowPlayingPoll();
-  const insets = useSafeAreaInsets();
 
   if (!isPlaying || !id) return null;
 
@@ -25,7 +23,7 @@ export const NowPlayingBar = () => {
   const title = networkName ? `${networkName} - ${displayName}` : displayName;
 
   return (
-    <View style={[styles.bar, { paddingTop: insets.top + 4 }]}>
+    <View style={styles.bar}>
       <DSText style={styles.note}>♪</DSText>
       <DSText style={styles.title} numberOfLines={1}>
         {title}
@@ -44,6 +42,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 6,
+    paddingTop: 8,
     borderBottomWidth: 2,
     borderBottomColor: LightColors.primary,
     gap: 8,

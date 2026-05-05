@@ -18,7 +18,9 @@ export const useFirstLaunch = () => {
   useEffect(() => {
     const listener = (v: boolean) => setIsFirstLaunch(v);
     listeners.add(listener);
-    return () => listeners.delete(listener);
+    return () => {
+      listeners.delete(listener);
+    };
   }, []);
 
   useEffect(() => {

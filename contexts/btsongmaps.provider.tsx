@@ -17,7 +17,7 @@ import {
   loadMappingsBTUtil,
   saveMappingBTUtil,
 } from '../lib/utils/btmapping';
-import { AUDIO_SOURCE_TYPES, playSound, stopSound } from '../lib/utils/controls';
+import { AUDIO_SOURCE_TYPES, playSound, stopSound, waitForAudioReady } from '../lib/utils/controls';
 import { logger } from '../lib/utils/logger';
 
 const bleManager = new BleManager();
@@ -75,6 +75,10 @@ export const BluetoothSongMappingProvider: FC<{
 
   const scanForNearbyDevices = useCallback(async () => {
     try {
+      // The AudioControlsService foreground service must be alive before BLE scanning
+      // begins. On Android 14+, BLE scanning from outside a foreground service context
+      // is blocked regardless of declared permissions.
+      await waitForAudioReady();
       const hasPermissions = await requestPermissions();
       if (!hasPermissions) {
         return [];
@@ -95,11 +99,11 @@ export const BluetoothSongMappingProvider: FC<{
             return;
           }
 
-          if (device?.rssi && device.rssi > -70) {
+          if (device?.rssi && device.rssi > -90) {
             foundDevices.set(device.id, device);
 
             const sortedDevices = Array.from(foundDevices.values())
-              .filter((d) => d.rssi && d.rssi > -70)
+              .filter((d) => d.rssi && d.rssi > -90)
               .sort((a, b) => (b.rssi || -100) - (a.rssi || -100));
 
             setNearbyDevices(sortedDevices);
@@ -110,7 +114,7 @@ export const BluetoothSongMappingProvider: FC<{
           bleManager.stopDeviceScan();
 
           const finalDevices = Array.from(foundDevices.values())
-            .filter((device) => device.rssi && device.rssi > -70)
+            .filter((device) => device.rssi && device.rssi > -90)
             .sort((a, b) => (b.rssi || -100) - (a.rssi || -100));
 
           setNearbyDevices(finalDevices);
@@ -213,7 +217,7 @@ export const BluetoothSongMappingProvider: FC<{
 
     performScan();
 
-    scanIntervalRef.current = setInterval(performScan, 25000);
+    scanIntervalRef.current = setInterval(performScan, 12000);
   }, [isScanning, scanForNearbyDevices, checkForMappedDevices]);
 
   const stopContinuousScanning = useCallback(() => {

@@ -1,5 +1,6 @@
 import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import DSText from '@/components/ui/ds-text';
+import { NowPlayingBar } from '@/components/ui/now-playing-bar';
 import { PolkaDotBackground } from '@/components/ui/polka-dot-background';
 import { LightColors } from '@/constants/Colors';
 import { useBtStore } from '@/lib/stores/bt-store';
@@ -36,88 +37,91 @@ const InfoScreen = () => {
   };
 
   return (
-    <PolkaDotBackground>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <DSText style={styles.title}>OVERWORLD</DSText>
-          <DSText style={styles.subtitle}>Location-triggered music player</DSText>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionDot} />
-            <DSText style={styles.sectionTitle}>Backup & Restore</DSText>
+    <>
+      <NowPlayingBar />
+      <PolkaDotBackground>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <DSText style={styles.title}>OVERWORLD</DSText>
+            <DSText style={styles.subtitle}>Location-triggered music player</DSText>
           </View>
-          <View style={styles.card}>
-            <DSText style={styles.cardDesc}>
-              Save your WiFi and Bluetooth mappings to a file, or restore from a previous backup.
-            </DSText>
-            <View style={styles.btnRow}>
-              <TouchableOpacity style={[styles.btn, styles.btnExport]} onPress={handleExport}>
-                <DSText style={styles.btnText}>Export</DSText>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.btn, styles.btnImport]} onPress={handleImport}>
-                <DSText style={styles.btnText}>Import</DSText>
-              </TouchableOpacity>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionDot} />
+              <DSText style={styles.sectionTitle}>Backup & Restore</DSText>
             </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionDot} />
-            <DSText style={styles.sectionTitle}>How it works</DSText>
-          </View>
-
-          <View style={styles.card}>
-            <DSText style={styles.cardTitle}>WiFi Mappings</DSText>
-            <DSText style={styles.cardBody}>
-              Connect to a network, tap "Map Song to This Network", and pick an audio file. That
-              song plays automatically every time you join that network.
-            </DSText>
-          </View>
-
-          <View style={styles.card}>
-            <DSText style={styles.cardTitle}>BT Encounters</DSText>
-            <DSText style={styles.cardBody}>
-              The app scans for nearby BLE devices and plays their mapped song when detected.
-              Bluetooth always takes priority over WiFi.
-            </DSText>
-          </View>
-
-          <View style={[styles.card, styles.noticeCard]}>
-            <View style={styles.noticeHeader}>
-              <DSText style={styles.noticeTag}>Important</DSText>
-              <DSText style={styles.cardTitle}>Location Required</DSText>
-            </View>
-            <DSText style={styles.cardBody}>
-              Android needs location access to read your WiFi network name and scan for Bluetooth
-              devices. If auto-play stops, check that location is on and permission is granted.
-            </DSText>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionDot} />
-            <DSText style={styles.sectionTitle}>Tips</DSText>
-          </View>
-
-          <View style={styles.card}>
-            {TIPS.map((tip, i) => (
-              <View key={tip} style={[styles.tipRow, i < TIPS.length - 1 && styles.tipDivider]}>
-                <DSText style={styles.tipBullet}>▸</DSText>
-                <DSText style={styles.tipText}>{tip}</DSText>
+            <View style={styles.card}>
+              <DSText style={styles.cardDesc}>
+                Save your WiFi and Bluetooth mappings to a file, or restore from a previous backup.
+              </DSText>
+              <View style={styles.btnRow}>
+                <TouchableOpacity style={[styles.btn, styles.btnExport]} onPress={handleExport}>
+                  <DSText style={styles.btnText}>Export</DSText>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.btn, styles.btnImport]} onPress={handleImport}>
+                  <DSText style={styles.btnText}>Import</DSText>
+                </TouchableOpacity>
               </View>
-            ))}
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </PolkaDotBackground>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionDot} />
+              <DSText style={styles.sectionTitle}>How it works</DSText>
+            </View>
+
+            <View style={styles.card}>
+              <DSText style={styles.cardTitle}>WiFi Mappings</DSText>
+              <DSText style={styles.cardBody}>
+                Connect to a network, tap "Map Song to This Network", and pick an audio file. That
+                song plays automatically every time you join that network.
+              </DSText>
+            </View>
+
+            <View style={styles.card}>
+              <DSText style={styles.cardTitle}>BT Encounters</DSText>
+              <DSText style={styles.cardBody}>
+                The app scans for nearby BLE devices and plays their mapped song when detected.
+                Bluetooth always takes priority over WiFi.
+              </DSText>
+            </View>
+
+            <View style={[styles.card, styles.noticeCard]}>
+              <View style={styles.noticeHeader}>
+                <DSText style={styles.noticeTag}>Important</DSText>
+                <DSText style={styles.cardTitle}>Location Required</DSText>
+              </View>
+              <DSText style={styles.cardBody}>
+                Android needs location access to read your WiFi network name and scan for Bluetooth
+                devices. If auto-play stops, check that location is on and permission is granted.
+              </DSText>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionDot} />
+              <DSText style={styles.sectionTitle}>Tips</DSText>
+            </View>
+
+            <View style={styles.card}>
+              {TIPS.map((tip, i) => (
+                <View key={tip} style={[styles.tipRow, i < TIPS.length - 1 && styles.tipDivider]}>
+                  <DSText style={styles.tipBullet}>▸</DSText>
+                  <DSText style={styles.tipText}>{tip}</DSText>
+                </View>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+      </PolkaDotBackground>
+    </>
   );
 };
 
